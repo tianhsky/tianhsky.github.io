@@ -1,0 +1,410 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>DevPoro</title>
+  <meta name="author" content="Tianyu Huang">
+  
+  <meta name="description" content="Dev Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="DevPoro"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="DevPoro" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-62517450-1', 'auto');
+	ga('send', 'pageview');
+
+</script>
+
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">DevPoro</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+      <li><a href="/portfolio">Portfolio</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-09-13T20:15:37.000Z"><a href="/2015/09/13/Thoughts-on-performance-optimization/">09/13/2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/09/13/Thoughts-on-performance-optimization/">Thoughts on performance optimization</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>Performance problem can have many factors, application server has its limit on how many requests it can handle simultaneously, database heavily relies on memory and IO, end user may be far away from servers. In this post I will focus on database improvement.</p>
+<img src="/2015/09/13/Thoughts-on-performance-optimization/db-performance.png" alt="[Database Performance]" title="[Database Performance]">
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/09/13/Thoughts-on-performance-optimization/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-08-16T11:16:08.000Z"><a href="/2015/08/16/AWS-VPC-Best-Configuration-Practices/">08/16/2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/08/16/AWS-VPC-Best-Configuration-Practices/">AWS VPC Best Configuration Practices</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>A VPC is a virtual network dedicated to your Amazon Web Services (AWS) account that’s logically isolated from other virtual networks in the AWS cloud. You can launch your AWS resources, such as Amazon EC2, RDS, ElasticCache and other instances into your VPC.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/vpc-diagram.png" alt="[VPC Diagram]" title="[VPC Diagram]">
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/08/16/AWS-VPC-Best-Configuration-Practices/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-05-08T05:21:09.000Z"><a href="/2015/05/08/How-to-make-Vagrant-performance-not-suck/">05/08/2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/05/08/How-to-make-Vagrant-performance-not-suck/">How to make Vagrant performance not suck</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p><a href="http://www.vagrantup.com/">Vagrant</a> is an invaluable tool for creating a standardized virtual environments that make it incredibly easy to bring on new developers. Instead of requiring users to install Postgres, Redis, Elasticsearch, etc to be able to run and develop on your app, you just give them 3 simple steps (hopefully they don’t even need the first two):</p>
+<ol>
+<li>Download &amp; install VirtualBox</li>
+<li>Download &amp; install Vagrant</li>
+<li>run vagrant up &amp;&amp; vagrant ssh from the project’s folder</li>
+</ol>
+<p>The problem I’ve run into over and over again is that about 1 out of every 3 people who go through this process end up complaining to me that running the app inside of their Vagrant box is painfully slow. The following is what I’ve learned from troubleshooting this issue over and over again.</p>
+<h2 id="Use_the_NFS,_Luke">Use the NFS, Luke</h2><p>By default, VirtualBox shares files between the host and guest operating systems using its own built-in sharing mechanism. While this method works across all types of hosts, it’s incredibly slow, at least on Unix hosts. The solution is to use NFS, which is much faster. How much faster, you ask? Simply turning on NFS doubled my Rails app’s performance, based on number of requests it was able to serve over a 2 minute period. You can read more about the benchmark methodology and results at the end of this article.</p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/05/08/How-to-make-Vagrant-performance-not-suck/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-05-06T22:19:38.000Z"><a href="/2015/05/06/How-to-Get-Google-to-Index-Your-New-Website-Blog-Quickly/">05/06/2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/05/06/How-to-Get-Google-to-Index-Your-New-Website-Blog-Quickly/">How to Get Google to Index Your New Website &amp; Blog Quickly</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>Whenever you create a new website or blog for your business, the first thing you probably want to happen is have people find it. And, of course, one of the ways you hope they will find it is through search. But typically, you have to wait around for the Googlebot to crawl your website and add it (or your newest content) to the Google index.</p>
+<p>So the question is: how do you ensure this happens as quickly as possible? Here are the basics of how website content is crawled and indexed, plus some great ways to get the Googlebot to your website or blog to index your content sooner rather than later.</p>
+<h2 id="What_is_Googlebot,_Crawling,_and_Indexing?">What is Googlebot, Crawling, and Indexing?</h2><img src="/2015/05/06/How-to-Get-Google-to-Index-Your-New-Website-Blog-Quickly/googlebot.png" alt="[Google Bot]" title="[Google Bot]">
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/05/06/How-to-Get-Google-to-Index-Your-New-Website-Blog-Quickly/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-05-03T18:47:05.000Z"><a href="/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/">05/03/2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/">Google Go or Node.js for web development? Which is better?</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>This post has been sloshing around in my brain for a couple of months now and it’s finally time to let it spill out all over the floor. Last July I started digging into Google Go for my Topcoder Cribs with Docker blog post, and found it to be surprising straight forward, powerful and easy to work with. Subsequently, the more Node.js that I wrote, the more I realized how much I liked Go and missed its ease of use. Periodically I’ve asked myself, “is Go better for web development than Node.js and JavaScript”? Unfortunately, I’ve yet to respond to myself.</p>
+<h2 id="JavaScript_is_Dead-_Long_Live_JavaScript-">JavaScript is Dead. Long Live JavaScript.</h2><p>Don’t get me wrong, I love JavaScript and MEAN is my go-to stack. Roughly 75% of my work is done with JavaScript on the server or client somewhere and I’d estimate that 60–70% of my personal repos are in some flavor of JavaScript. But like most full-stack developers, I’m overwhelmed by seemingly daily releases of new frameworks, testing tools, templating libraries and more. I know the goal is to “JavaScript all the things” but I think we need to stop or take a smoke break from the madness. The State of JavaScript in 2015 provides a great example of the chaos:</p>
+<blockquote>
+<p>As little as twelve months ago is seemed a fait accompli that the modern web would be dominated by Backbone.js (maybe using Marionette), with Grunt as a task runner, Require.js and Handlebars-based templating. Yet six months later, these technologies had all apparently been replaced, if the blogosphere was anything to go by – now, it was all about Angular, Gulp and Browserify. And then suddenly this stack seems questionable too.</p>
+</blockquote>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-05-02T03:56:22.000Z"><a href="/2015/05/01/MEAN-is-great-but-then-you-grow-up/">05/01/2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/05/01/MEAN-is-great-but-then-you-grow-up/">MEAN is great, but then you grow up</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <blockquote>
+<p>The <strong>MEAN</strong> stack (MongoDB, Express.js, Angular.js, Node.js) is now being heralded as the new <strong>LAMP</strong> (Linux, Apache, MySQL, PHP), the preferred technology stack for startups.</p>
+<p>MEAN is certainly a great technology choice for organizations (particularly startups) seeking to rapidly prototype a capability. However, like all technology choices, the MEAN stack comes with a number tradeoffs. Once you’ve hit some level of success or maturity with MEAN, you should re-evaluate the utility of the individual MEAN technologies as they pertain to your product.</p>
+</blockquote>
+<p>This post is a set of revelations you will probably encounter after the first year of using MEAN, particularly when your product has seen some adoption.</p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/05/01/MEAN-is-great-but-then-you-grow-up/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+
+<nav id="pagination">
+  
+  
+  <div class="clearfix"></div>
+</nav></div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:www.devporo.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Categories</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/categories/development/">development</a><small>1</small></li>
+  
+    <li><a href="/categories/devops/">devops</a><small>1</small></li>
+  
+    <li><a href="/categories/framework/">framework</a><small>1</small></li>
+  
+    <li><a href="/categories/language/">language</a><small>1</small></li>
+  
+    <li><a href="/categories/performance/">performance</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/MEAN/">MEAN</a><small>1</small></li>
+  
+    <li><a href="/tags/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/tags/SOA/">SOA</a><small>1</small></li>
+  
+    <li><a href="/tags/angular-js/">angular.js</a><small>1</small></li>
+  
+    <li><a href="/tags/aws/">aws</a><small>1</small></li>
+  
+    <li><a href="/tags/environment/">environment</a><small>1</small></li>
+  
+    <li><a href="/tags/express-js/">express.js</a><small>1</small></li>
+  
+    <li><a href="/tags/golang/">golang</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/load-balancing/">load balancing</a><small>1</small></li>
+  
+    <li><a href="/tags/mongodb/">mongodb</a><small>1</small></li>
+  
+    <li><a href="/tags/node-js/">node.js</a><small>2</small></li>
+  
+    <li><a href="/tags/performance/">performance</a><small>1</small></li>
+  
+    <li><a href="/tags/performance-optimization/">performance optimization</a><small>1</small></li>
+  
+    <li><a href="/tags/replication/">replication</a><small>1</small></li>
+  
+    <li><a href="/tags/sharding/">sharding</a><small>1</small></li>
+  
+    <li><a href="/tags/vagrant/">vagrant</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 Tianyu Huang
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'devporo';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>MEAN is great, but then you grow up | DevPoro</title>
+  <meta name="author" content="Tianyu Huang">
+  
+  <meta name="description" content="MEAN is great, but then you grow up. - Develop a prototype, then reflect on your choice.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="MEAN is great, but then you grow up"/>
+  <meta property="og:site_name" content="DevPoro"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="DevPoro" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-62517450-1', 'auto');
+	ga('send', 'pageview');
+
+</script>
+
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">DevPoro</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+      <li><a href="/portfolio">Portfolio</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-05-02T03:56:22.000Z"><a href="/2015/05/01/MEAN-is-great-but-then-you-grow-up/">05/01/2015</a></time>
+      
+      
+  
+    <h1 class="title">MEAN is great, but then you grow up</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <blockquote>
+<p>The <strong>MEAN</strong> stack (MongoDB, Express.js, Angular.js, Node.js) is now being heralded as the new <strong>LAMP</strong> (Linux, Apache, MySQL, PHP), the preferred technology stack for startups.</p>
+<p>MEAN is certainly a great technology choice for organizations (particularly startups) seeking to rapidly prototype a capability. However, like all technology choices, the MEAN stack comes with a number tradeoffs. Once you’ve hit some level of success or maturity with MEAN, you should re-evaluate the utility of the individual MEAN technologies as they pertain to your product.</p>
+</blockquote>
+<p>This post is a set of revelations you will probably encounter after the first year of using MEAN, particularly when your product has seen some adoption.</p>
+<a id="more"></a>
+<h2 id="MongoDB">MongoDB</h2><p>MongoDB is a great database. I say this upfront because I’m going to criticize the way it is often abused by developers who don’t understand its model and use cases. I don’t want you to interpret this as me advocating you avoiding MongoDB.</p>
+<p>Like all databases, MongoDB has a sweet-spot. Its great for the storage of schema-less documents where access to records is at the “document-level” (e.g. not pieces of documents). MongoDB is very fast, but it achieves its performance by trading off consistency (in clustered setups). Thus, MongoDB is great when you need speed, flexibility in your model and can accept minor and relatively infrequent data loss.</p>
+<p>However, Mongo may not be the optimal choice for your data storage and access needs.</p>
+<p>There are a number of factors you need to consider when selecting a database. One mistake engineers make when they design an application is to prematurely optimize the system for scale and performance before they have any real metrics. While MongoDB is touted as a “web scale” database, it comes at the cost of features provided by more traditional forms of storage like relational databases (MySQL, PostgresSQL, etc).</p>
+<iframe width="100%" height="400" src="https://www.youtube.com/embed/b2F-DItXtZs" frameborder="0" allowfullscreen></iframe>
+
+<p>A satirical comparison of MongoDB and MySQL.</p>
+<h3 id="MongoDB_Consistency">MongoDB Consistency</h3><p>MongoDB claims to be strongly consistent, but a lot of evidence recently has shown this not to be the case in certain scenarios (when network partitioning occurs, which can happen under heavy load) [1] [2]. <strong>This means that you can potentially lose records that MongoDB has acknowledged as “successfully written”.</strong> Kyle Kingsbury writes an excellent article on his well known blog “Aphyr” about this scenario: <a href="http://aphyr.com/posts/284-call-me-maybe-mongodb" target="_blank" rel="external">http://aphyr.com/posts/284-call-me-maybe-mongodb</a>.</p>
+<p>In terms of your application, if you have a need to have transactional guarantees (meaning if you can’t make a durable write, you need the transaction to fail), you should avoid MongoDB. Example scenarios where strong consistency and durability are essential include “making a deposit into a bank account” or “creating a record of birth”. To put it another way, these are scenarios where you would <strong>get punched in the face by your customer</strong> if you indicated an operation succeeded and it didn’t.</p>
+<p><strong>Don’t drop MongoDB just yet.</strong></p>
+<p>The first step to solving a problem is know you have a problem. If your system can’t tolerate data loss, but the domain isn’t necessarily “bank account worthy” of transactional guarantees (e.g. a comment on a post), you can take external steps to guarantee data protection. For instance, you can log records externally (file system, log aggregator, etc.) and have a process that verifies the integrity of those records. This is especially true if your data set is immutable (meaning records do not get updated once they are created).</p>
+<p>MongoDB is always being patched or updated. It’s possible that some of these concerns will get fixed in the next couple of months and this point will be moot.</p>
+<p>Realistically, the first problem you will likely encounter with MongoDB will be model related, not a consistency issue.</p>
+<h3 id="Access_and_Storage_Patterns">Access and Storage Patterns</h3><p>MongoDB is a document database where the document format is JSON (errr…BSON). MongoDB will allow you to flexibly query records using properties on JSON documents, however, it’s not really designed to do things like Joins (where you create a new record from a set of two or more records). The theory behind a document database is that you keep all pertinent pieces of data together in one data structure. This makes retrieval of a record and all other pertinent information really fast (since no joins are involved). The scope of how much data is stored in that data structure is based on how you intend to access it.</p>
+<p>For instance, if I wanted to model a forum, I might consider storing each forum thread as its own JSON document. This means all comments, upvotes, view statistics, etc. would be stored in the same JSON object. Storing all of the information in a JSON object means the schema of the document is going to contain a bunch of nested entities (objects being an indicator), commonly in some form of aggregation (an array or another object). In a normalized database (not Mongo), entities are typically stored in their own containers (table, collection, etc.). This makes working with the individual entities very easy, especially when you want to perform a partial update of a record.</p>
+<p>Denormalized data stores like MongoDB come with tradeoffs:</p>
+<ul>
+<li><strong>More difficult to perform partial updates</strong> on nested or aggregated entities since the models are buried within each document. This does not mean it’s impossible (MongoDB update operators), but certainly more difficult.</li>
+<li><strong>Difficult to compose new entities from existing aggregates.</strong> Meaning, if you want to get all comments for a particular user, but comments are stored in each forum thread, you will have to perform a MapReduce operation over the entire set to retrieve that information.</li>
+<li><strong>Need for record synchronization</strong> if you represent the same piece of data in more than one place. For instance, if you keep a user’s name with their comments on a forum post, and the user updates their name in their profile, you will have to iterate through each comment to make the same update.</li>
+</ul>
+<p>A rather famous, yet controversial, article was written on this topic: Why You Should Never Use MongoDB. While the title infers that MongoDB was the problem, the real issue was denormalization in a document database didn’t fit Diaspora’s highly-relational model.</p>
+<p>So you have to decide what model best fits your dataset. If you don’t need to maintain relationships between records, need partial updates, or need to access/mutate aggregates, I’d say MongoDB is ideal for you.</p>
+<h3 id="Maintenance">Maintenance</h3><p>MongoDB is not particularly difficult to maintain, but it does have its costs. If you want to employ sharding and replication, you will need to stand up the necessary MongoDB daemons to perform these services, and they will need to be split amongst a couple of servers to be correctly configured. Really, the same is true with any distributed database and your operations team needs to be prepared for the responsibility. In addition, maintaining a Mongo cluster takes some skill and effort, more so than a traditional relational database. Michael Schurter details some of the maintenance effort in Failing with MongoDB.</p>
+<p>The key point to take away here is that if your organization is unprepared to operate, monitor, and maintain a MongoDB cluster, you should either find a hosted solution (Mongolab or Compose - formerly MongoHQ) or use another database.</p>
+<h3 id="Go_polyglot">Go polyglot</h3><p>No database will ever perfectly meet all of your use cases. So, instead of limiting yourself to one, why not use a couple?</p>
+<ul>
+<li>Full-text search: while MongoDB has a full-text index, it’s not as powerful as other, dedicated solutions: Lucene/Solr, ElasticSearch, Sphinx.</li>
+<li>Relational databases: still the workhorse for a number of huge applications at companies like Facebook and Google. Granted, it takes more code to be productive, and they can much slower when you need to perform Joins, they still offer better overall functionality than most NoSQL solutions.</li>
+<li>Key-Value stores: provide great performance for simple lookups. Some implementations like Redis offer super fast set and incrementing operations.</li>
+<li>Graph databases: if you have a highly connected model, like a social network, a graph database may be your best choice for maintaining those relationships.</li>
+</ul>
+<p>Going polyglot isn’t problem free. I guarantee you will be introducing more complexity into your code base and architecture following this route. However, you will likely alleviate some of the performance issues encountered using only one data source.</p>
+<p>OK, I’ve hammered on MongoDB long enough. Let’s look at the rest of the MEAN stack.</p>
+<h2 id="Express-js">Express.js</h2><p>Express.js is probably the most popular and mature server-side MVC framework in the Node.js ecosystem. Countless organizations have built significant applications on the framework without much difficulty.</p>
+<p><strong>However, not everyone is content with Express.js.</strong> - You may not be as well.</p>
+<p>Express, like many frameworks, has to live with its own success. As a piece of software, this usually meaning living with decisions made early in the development of the framework. Some of the problems were detailed by Eran Hammer in his post on why he created Hapi.js:</p>
+<ol>
+<li><strong>Limited extensibility</strong>, Eran felt strangled by the middleware (Connect) implementation, particularly when he needed multiple components to coordinate together [3].</li>
+<li><strong>Poor isolation of the server from the business logic</strong> which prevented the reuse of services for purposes like batching operations (you don’t want to have to go through the Express middleware chain for an internal request) [3].</li>
+<li><strong>Code instead of configuration</strong>, Express emphasized using code (imperative programming) instead using a more declarative model when wiring up middleware and defining routes [3].</li>
+</ol>
+<p>In fact, there are now many robust server-side frameworks to choose from in the Node.js ecosystem. To name a few:</p>
+<ul>
+<li>Hapi.js (<a href="http://hapijs.com/" target="_blank" rel="external">http://hapijs.com/</a>)</li>
+<li>Sails.js (<a href="http://sailsjs.org/" target="_blank" rel="external">http://sailsjs.org/</a>)</li>
+<li>RESTify (<a href="http://mcavage.me/node-restify/" target="_blank" rel="external">http://mcavage.me/node-restify/</a>)</li>
+<li>Derby (<a href="http://derbyjs.com/" target="_blank" rel="external">http://derbyjs.com/</a>)</li>
+<li>Tower (<a href="http://towerjs.org/" target="_blank" rel="external">http://towerjs.org/</a>)</li>
+<li>Tako (<a href="https://github.com/mikeal/tako" target="_blank" rel="external">https://github.com/mikeal/tako</a>)</li>
+<li>Flatiron (<a href="http://flatironjs.org/" target="_blank" rel="external">http://flatironjs.org/</a>)</li>
+</ul>
+<p>If you don’t like Express, it doesn’t take much to move away from it. However, moving to another framework means you will not be able to use a lot of the boilerplate the MEAN project provides you (since much of it is simply a bow-tie around Express). Therefore, this choice is going to involve modifying some configuration around Grunt (the build tool used by the MEAN project) among other things*. Once you are comfortable with the Node.js environment, I think you will find much of this functionality a convenience that you can potentially live with out.</p>
+<p>*When I refer to the “MEAN project”, I’m referring to the code written by MEAN.io that provides features like code generation, runtime configuration, and package management. I’m not speaking of the individual technologies in the MEAN stack.</p>
+<h2 id="Angular-js">Angular.js</h2><p>Angular.js is another great framework, one I personally use and advocate for most web projects. However, in certain circumstances, Angular.js may not be the best framework for your needs.</p>
+<h3 id="Your_heart_might_belong_to_another_framework-">Your heart might belong to another framework.</h3><p>Angular’s programming model borrows a lot of idioms from the Java world (dependency injection, namespaces, etc.). Angular also promotes the separation of DOM manipulation code into directives, the use of a scope hierarchy with dirty state checking, and some behavior defined directly in templates. Together, this style of programming is likely to turn some people off.</p>
+<p>But…that’s ok.</p>
+<p>JavaScript has a number of really good Single Page Application frameworks and if Angular doesn’t match your style, I’m sure some other will:</p>
+<ul>
+<li>Ember.js (<a href="http://emberjs.com/" target="_blank" rel="external">http://emberjs.com/</a>)</li>
+<li>Backbone (<a href="http://backbonejs.org/" target="_blank" rel="external">http://backbonejs.org/</a>)</li>
+<li>Marionette (<a href="http://marionettejs.com/" target="_blank" rel="external">http://marionettejs.com/</a>)</li>
+<li>Knockout (<a href="http://knockoutjs.com/" target="_blank" rel="external">http://knockoutjs.com/</a>)</li>
+<li>Batman (<a href="http://batmanjs.org/" target="_blank" rel="external">http://batmanjs.org/</a>)</li>
+<li>React (<a href="http://facebook.github.io/react/" target="_blank" rel="external">http://facebook.github.io/react/</a>)</li>
+</ul>
+<p>And many, many more…</p>
+<h3 id="Angular-js_may_be_too_difficult_for_your_team-">Angular.js may be too difficult for your team.</h3><p>A common complaint about Angular is that it is too hard to learn. I don’t find this to be the case, but I came to the framework with years of JavaScript experience. Needless to say, other disagree with me. Probably the most vocal is George Butiri in his post The Reason Angular.js Will Fail. Personally, I think he’s failed to grasp some of the core concepts of Angular, but I guess this notion may reinforce his case.</p>
+<p>Even if you really like Angular, and think it was easy to pick up, there is validity to the idea that your team may not feel the same way. So, you may find a need to migrate to another framework if you can’t recruit a competent Angular team.</p>
+<img src="/2015/05/01/MEAN-is-great-but-then-you-grow-up/original.jpg" alt="[My feeling about augnlar.js over time]" title="[My feeling about augnlar.js over time]">
+<p>Angular.js learning coaster<br>I think this describes a lot of people’s experiences around learning Angular.</p>
+<h3 id="Angular-js_may_be_inappropriate">Angular.js may be inappropriate</h3><p><strong>Need Search Engine Optimization:</strong> if you need your application to be indexed by search engines, Single Page Application frameworks will make your life difficult. This is because the application is composed in the UI, so there’s not going to be anything to index if the search engine doesn’t execute the in-page JavaScript like a browser would. Google has stated that they will begin to render pages before indexing, solving the SPA problem, but there’s no commitment yet from the other search engines. In the meantime, you are left with two strategies: work around the problem by providing a set of indexable pages in addition to your SPA, or go back to a more traditional server-side MVC [4].</p>
+<p><strong>Need finer-grained control over DOM:</strong> Angular is going to do its best to get in between you and the DOM (that’s its intention). If you need to have more control over DOM, trying to work purely through directives may not be enough (for instance, if you’re writing something as complex as Photoshop with a lot of cross-component interactions). Honestly, I rarely see this being the case.</p>
+<p><strong>Encounter performance issues you can’t work around:</strong> Angular is pretty fast, but there are certain situations where dirty-state checking can be more costly than using an observer model (like Ember’s). This is quickly seen when a page has a large number of active watches on variables (keep in mind every  is a watch!). Angular authors generally recommend staying under 2,000, mostly because experience has shown them that’s the practical limit for slower machines and older browsers. There’s also a number of tricks to optimize performance, like rendering immutable variables only once (and omitting the watch). After some tuning you might find that Angular still doesn’t provide the performance you are looking for; in that case, you may need to research another framework.*</p>
+<p>*The new Object.observe() ECMA standard will solve a large number of these performance issues for newer browsers [5].</p>
+<h2 id="Node-js">Node.js</h2><p>Finally, we come to Node.js. It’s a great platform, but it’s not for everybody and every use case:</p>
+<p><strong>The JavaScript language:</strong> let’s face it, there’s a large community of developers that like statically-type languages with classic Object-Oriented Programming models. These developers tend to be spoiled with a wealth of tools like IDE’s (with syntax highlighting and code completion), debuggers, VM monitoring tools, etc. Node.js does not have this sort of support.</p>
+<p><strong>Concurrency model:</strong> Node.js uses a single-threaded event loop. JavaScript callbacks are essentially functions queued for execution. I don’t mind this style of concurrency, but many developers loathe it. However, there are some use cases where a thread or actor model makes more sense. In those cases, you will need to find another platform.</p>
+<p><strong>Ecosystem:</strong> while Node’s ecosystem is getting better each year, it’s still hard to compare to languages like Java, Python, PHP, or Ruby. There are a number of domains with substantial frameworks that have no equivalent in JavaScript: scientific computing, natural language processing, rules engines, business process management, distributed computing, security, infrastructure, virtualization, etc. Most of the time it makes more sense to write in the framework’s native language, than try to write some wrapper around it to be controlled via Node.js*.</p>
+<p><strong>Packaging and Deployment:</strong> in some cases, Node.js may not be appropriate simply because it’s a scripting language. This is particularly true if you are writing a product that is packaged and distributed to customers (e.g. on a CD or by download). JavaScript has no means other than minification/obfuscation for protecting your software from IP infringement or piracy. In other cases, customers may not allow a scripting language to be hosted on their servers for security reasons (we see this every once in a while with government customers).</p>
+<p><strong>Team considerations:</strong> most likely your team is not equipped to write server-side JavaScript. When you think about it, JavaScript was in the domain of the Web Developer for the longest time. So your experienced JavaScripters tend to be frontend guys, not backend ones. Also, server-side programming is not easy and takes a mindset quite different than frontend work. So don’t expect your Web Developers to start immediately writing quality backend code, or your server-side guys to be writing quality JavaScript.</p>
+<p><strong>Plenty of viable alternatives:</strong> let’s face it, there’s a lot of sexy on the backend nowaday. While Node.js may be the soup du jour of developers today, it’s completely possible that in two years it will be superseded by Golang, Elixir, Scala, Clojure or something else we’ve never even heard of. Let’s also remember that popularity in Ruby, Python, Java, and C# haven’t wained too much either. With all of these alternatives, it’s easy to find examples where applications would have been more appropriately written on another platform*.</p>
+<p>*Keep in mind that if you ditch Node.js, you also ditch Express.js.</p>
+<p>#Conclusion</p>
+<p>MEAN’s great, but then you grow up. My point is that you shouldn’t let the flashy new toy blind you to the fact that you are accepting serious tradeoffs. If the technology stack and programming paradigm fits your use case well, keep using it. However, if you are like the majority of developers I know, you are quickly going to discover some of the pitfalls of the architecture. In that case, I encourage you to think about the problems you are encountering, specifically, what pieces of the MEAN stack aren’t working out for you. Find compelling reasons why those pieces shouldn’t be in your system and don’t be afraid to move away if you feel it necessary.</p>
+<h2 id="References">References</h2><ul>
+<li><a href="http://aphyr.com/posts/284-call-me-maybe-mongodb" target="_blank" rel="external">http://aphyr.com/posts/284-call-me-maybe-mongodb</a></li>
+<li><a href="http://hackingdistributed.com/2013/01/29/mongo-ft/" target="_blank" rel="external">http://hackingdistributed.com/2013/01/29/mongo-ft/</a></li>
+<li><a href="http://hueniverse.com/2012/12/20/hapi-a-prologue/" target="_blank" rel="external">http://hueniverse.com/2012/12/20/hapi-a-prologue/</a></li>
+<li><a href="https://coderwall.com/p/vqpfka" target="_blank" rel="external">https://coderwall.com/p/vqpfka</a></li>
+<li><a href="http://www.html5rocks.com/en/tutorials/es7/observe/" target="_blank" rel="external">http://www.html5rocks.com/en/tutorials/es7/observe/</a></li>
+</ul>
+<hr>
+
+<p><strong>About the Author:</strong> Richard Clayton.<br><i class="fa fa-link"></i><a href="https://rclayton.silvrback.com/means-great-but-then-you-grow-up" target="_blank" rel="external">Original post link</a>.</p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/framework/">framework</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/MEAN/">MEAN</a>, <a href="/tags/angular-js/">angular.js</a>, <a href="/tags/express-js/">express.js</a>, <a href="/tags/mongodb/">mongodb</a>, <a href="/tags/node-js/">node.js</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Comments</h1>
+
+  
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:www.devporo.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Categories</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/categories/development/">development</a><small>1</small></li>
+  
+    <li><a href="/categories/devops/">devops</a><small>1</small></li>
+  
+    <li><a href="/categories/framework/">framework</a><small>1</small></li>
+  
+    <li><a href="/categories/language/">language</a><small>1</small></li>
+  
+    <li><a href="/categories/performance/">performance</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/MEAN/">MEAN</a><small>1</small></li>
+  
+    <li><a href="/tags/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/tags/SOA/">SOA</a><small>1</small></li>
+  
+    <li><a href="/tags/angular-js/">angular.js</a><small>1</small></li>
+  
+    <li><a href="/tags/aws/">aws</a><small>1</small></li>
+  
+    <li><a href="/tags/environment/">environment</a><small>1</small></li>
+  
+    <li><a href="/tags/express-js/">express.js</a><small>1</small></li>
+  
+    <li><a href="/tags/golang/">golang</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/load-balancing/">load balancing</a><small>1</small></li>
+  
+    <li><a href="/tags/mongodb/">mongodb</a><small>1</small></li>
+  
+    <li><a href="/tags/node-js/">node.js</a><small>2</small></li>
+  
+    <li><a href="/tags/performance/">performance</a><small>1</small></li>
+  
+    <li><a href="/tags/performance-optimization/">performance optimization</a><small>1</small></li>
+  
+    <li><a href="/tags/replication/">replication</a><small>1</small></li>
+  
+    <li><a href="/tags/sharding/">sharding</a><small>1</small></li>
+  
+    <li><a href="/tags/vagrant/">vagrant</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 Tianyu Huang
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'devporo';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

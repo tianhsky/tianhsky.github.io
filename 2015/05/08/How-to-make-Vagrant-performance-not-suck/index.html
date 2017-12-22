@@ -1,0 +1,262 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>How to make Vagrant performance not suck | DevPoro</title>
+  <meta name="author" content="Tianyu Huang">
+  
+  <meta name="description" content="How to make Vagrant performance not suck - File sharing speed it the key">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="How to make Vagrant performance not suck"/>
+  <meta property="og:site_name" content="DevPoro"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="DevPoro" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-62517450-1', 'auto');
+	ga('send', 'pageview');
+
+</script>
+
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">DevPoro</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+      <li><a href="/portfolio">Portfolio</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-05-08T05:21:09.000Z"><a href="/2015/05/08/How-to-make-Vagrant-performance-not-suck/">05/08/2015</a></time>
+      
+      
+  
+    <h1 class="title">How to make Vagrant performance not suck</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p><a href="http://www.vagrantup.com/" target="_blank" rel="external">Vagrant</a> is an invaluable tool for creating a standardized virtual environments that make it incredibly easy to bring on new developers. Instead of requiring users to install Postgres, Redis, Elasticsearch, etc to be able to run and develop on your app, you just give them 3 simple steps (hopefully they don’t even need the first two):</p>
+<ol>
+<li>Download &amp; install VirtualBox</li>
+<li>Download &amp; install Vagrant</li>
+<li>run vagrant up &amp;&amp; vagrant ssh from the project’s folder</li>
+</ol>
+<p>The problem I’ve run into over and over again is that about 1 out of every 3 people who go through this process end up complaining to me that running the app inside of their Vagrant box is painfully slow. The following is what I’ve learned from troubleshooting this issue over and over again.</p>
+<h2 id="Use_the_NFS,_Luke">Use the NFS, Luke</h2><p>By default, VirtualBox shares files between the host and guest operating systems using its own built-in sharing mechanism. While this method works across all types of hosts, it’s incredibly slow, at least on Unix hosts. The solution is to use NFS, which is much faster. How much faster, you ask? Simply turning on NFS doubled my Rails app’s performance, based on number of requests it was able to serve over a 2 minute period. You can read more about the benchmark methodology and results at the end of this article.</p>
+<a id="more"></a>
+<p>To enable NFS, add the following to your Vagrantfile:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Required for NFS to work, pick any local IP</span></span><br><span class="line">config.vm.network :private_network, ip: <span class="string">'192.168.50.50'</span></span><br><span class="line"><span class="comment"># Use NFS for shared folders for better performance</span></span><br><span class="line">config.vm.synced_folder <span class="string">'./data'</span>, <span class="string">'/vagrant'</span>, nfs: <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>Important caveat: most of this is not strictly Vagrant’s fault; the blame lies with VirtualBox, if anything. However, I do wish the Vagrant documentation had a section on performance, because, while the information on NFS is in there, it seems fairly inconsequential until you actually benchmark and realize you’re getting half the performance that you could be getting.</p>
+<h2 id="Use_all_CPU_cores_and_1/4_system_memory">Use all CPU cores and 1/4 system memory</h2><p>Most folks just don’t seem to bother with telling Virtualbox to use more than one CPU core or the default amount RAM, which is understandable because it’s hard to come up with something that works regardless of different host systems. It took me a while, but I put together the following, which should set these values based on each individual host system:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">config.vm.provider <span class="string">"virtualbox"</span> <span class="keyword">do</span> |v|</span><br><span class="line">  host = RbConfig::CONFIG[<span class="string">'host_os'</span>]</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Give VM 1/4 system memory &amp; access to all cpu cores on the host</span></span><br><span class="line">  <span class="keyword">if</span> host =~ /darwin/</span><br><span class="line">    cpus = `sysctl -n hw.ncpu`.to_i</span><br><span class="line">    <span class="comment"># sysctl returns Bytes and we need to convert to MB</span></span><br><span class="line">    mem = `sysctl -n hw.memsize`.to_i / <span class="number">1024</span> / <span class="number">1024</span> / <span class="number">4</span></span><br><span class="line">  elsif host =~ /linux/</span><br><span class="line">    cpus = `nproc`.to_i</span><br><span class="line">    <span class="comment"># meminfo shows KB and we need to convert to MB</span></span><br><span class="line">    mem = `grep <span class="string">'MemTotal'</span> /proc/meminfo | sed <span class="operator">-e</span> <span class="string">'s/MemTotal://'</span> <span class="operator">-e</span> <span class="string">'s/ kB//'</span>`.to_i / <span class="number">1024</span> / <span class="number">4</span></span><br><span class="line">  <span class="keyword">else</span> <span class="comment"># sorry Windows folks, I can't help you</span></span><br><span class="line">    cpus = <span class="number">2</span></span><br><span class="line">    mem = <span class="number">1024</span></span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  v.customize [<span class="string">"modifyvm"</span>, :id, <span class="string">"--memory"</span>, mem]</span><br><span class="line">  v.customize [<span class="string">"modifyvm"</span>, :id, <span class="string">"--cpus"</span>, cpus]</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+<h2 id="Use_vagrant_package">Use vagrant package</h2><p>The typical Vagrant box setup process involves downloading a base box (usually lucid64 or precise64) and installing the required packages with a provisioner like Puppet or Chef. I’ve found that there’s little value in dealing with the hassle of writing the necessary provisioning scripts. It’s much easier to fire up a base box, install everything manually, exit out of the ssh session, and then run vagrant package –output NAME. This will give you a NAME.box file that you can upload to your host of choice (I used S3) and add to your Vagrantfile like so:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">config.vm.box = <span class="string">'NAME'</span></span><br><span class="line">config.vm.box_url = <span class="string">'https://s3.amazonaws.com/BUCKET/vagrant/NAME.box'</span></span><br></pre></td></tr></table></figure>
+<p>This way, when vagrant up runs, it will download the pre-provisioned box and fire it up immediately, rather than going through the provisioning process again.</p>
+<h2 id="Extra:_NFS_benchmarks">Extra: NFS benchmarks</h2><p>To benchmark, I used wrk, a great purpose-built HTTP benchmarking tool that I find much more pleasant to use than ab. On a Mac it’s a simple brew install wrk away.</p>
+<p>Vagrant using virtualbox sharing:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">→ wrk -d120s http:<span class="comment">//localhost:3333/</span></span><br><span class="line">Running <span class="number">2</span>m test @ http:<span class="comment">//localhost:3333/</span></span><br><span class="line">  <span class="number">2</span> threads and <span class="number">10</span> connections</span><br><span class="line">  Thread Stats   Avg      Stdev     Max   +/- Stdev</span><br><span class="line">    Latency    <span class="number">49.14</span>s    <span class="number">29.37</span>s    <span class="number">1.17</span>m   <span class="number">100.00</span>%</span><br><span class="line">    Req/Sec     <span class="number">0.00</span>      <span class="number">0.00</span>     <span class="number">0.00</span>    <span class="number">100.00</span>%</span><br><span class="line">  <span class="number">12</span> requests in <span class="number">2.00</span>m, <span class="number">490.39</span>KB read</span><br><span class="line">  Socket errors: connect <span class="number">0</span>, read <span class="number">0</span>, write <span class="number">0</span>, timeout <span class="number">588</span></span><br><span class="line">Requests/sec:      <span class="number">0.10</span></span><br><span class="line">Transfer/sec:      <span class="number">4.09</span>KB</span><br><span class="line">Running the app natively on my Macbook:</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">→ wrk -d120s http:<span class="comment">//localhost:3000/</span></span><br><span class="line">Running <span class="number">2</span>m test @ http:<span class="comment">//localhost:3000/</span></span><br><span class="line">  <span class="number">2</span> threads and <span class="number">10</span> connections</span><br><span class="line">  Thread Stats   Avg      Stdev     Max   +/- Stdev</span><br><span class="line">    Latency    <span class="number">40.04</span>s    <span class="number">10.71</span>s   <span class="number">47.93</span>s    <span class="number">82.35</span>%</span><br><span class="line">    Req/Sec     <span class="number">0.00</span>      <span class="number">0.00</span>     <span class="number">0.00</span>    <span class="number">100.00</span>%</span><br><span class="line">  <span class="number">27</span> requests in <span class="number">2.00</span>m, <span class="number">1.10</span>MB read</span><br><span class="line">  Socket errors: connect <span class="number">0</span>, read <span class="number">0</span>, write <span class="number">0</span>, timeout <span class="number">573</span></span><br><span class="line">Requests/sec:      <span class="number">0.22</span></span><br><span class="line">Transfer/sec:      <span class="number">9.37</span>KB</span><br><span class="line">Vagrant <span class="keyword">using</span> NFS sharing:</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">→ wrk -d120s http:<span class="comment">//localhost:3333/</span></span><br><span class="line">Running <span class="number">2</span>m test @ http:<span class="comment">//localhost:3333/</span></span><br><span class="line">  <span class="number">2</span> threads and <span class="number">10</span> connections</span><br><span class="line">  Thread Stats   Avg      Stdev     Max   +/- Stdev</span><br><span class="line">    Latency    <span class="number">41.46</span>s    <span class="number">12.49</span>s    <span class="number">1.03</span>m    <span class="number">50.00</span>%</span><br><span class="line">    Req/Sec     <span class="number">0.00</span>      <span class="number">0.00</span>     <span class="number">0.00</span>    <span class="number">100.00</span>%</span><br><span class="line">  <span class="number">24</span> requests in <span class="number">2.00</span>m, <span class="number">0.96</span>MB read</span><br><span class="line">  Socket errors: connect <span class="number">0</span>, read <span class="number">0</span>, write <span class="number">0</span>, timeout <span class="number">576</span></span><br><span class="line">Requests/sec:      <span class="number">0.20</span></span><br><span class="line">Transfer/sec:      <span class="number">8.18</span>KB</span><br></pre></td></tr></table></figure>
+<hr>
+
+<p><strong>About the Author:</strong> Stefan Wrobel - Founder. Developer. Surfer. Skier. Libertarian. Atheist.<br><i class="fa fa-link"></i> <a href="https://stefanwrobel.com/how-to-make-vagrant-performance-not-suck" target="_blank" rel="external">Original post link</a></p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/development/">development</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/environment/">environment</a>, <a href="/tags/performance/">performance</a>, <a href="/tags/vagrant/">vagrant</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Comments</h1>
+
+  
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:www.devporo.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Categories</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/categories/development/">development</a><small>1</small></li>
+  
+    <li><a href="/categories/devops/">devops</a><small>1</small></li>
+  
+    <li><a href="/categories/framework/">framework</a><small>1</small></li>
+  
+    <li><a href="/categories/language/">language</a><small>1</small></li>
+  
+    <li><a href="/categories/performance/">performance</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/MEAN/">MEAN</a><small>1</small></li>
+  
+    <li><a href="/tags/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/tags/SOA/">SOA</a><small>1</small></li>
+  
+    <li><a href="/tags/angular-js/">angular.js</a><small>1</small></li>
+  
+    <li><a href="/tags/aws/">aws</a><small>1</small></li>
+  
+    <li><a href="/tags/environment/">environment</a><small>1</small></li>
+  
+    <li><a href="/tags/express-js/">express.js</a><small>1</small></li>
+  
+    <li><a href="/tags/golang/">golang</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/load-balancing/">load balancing</a><small>1</small></li>
+  
+    <li><a href="/tags/mongodb/">mongodb</a><small>1</small></li>
+  
+    <li><a href="/tags/node-js/">node.js</a><small>2</small></li>
+  
+    <li><a href="/tags/performance/">performance</a><small>1</small></li>
+  
+    <li><a href="/tags/performance-optimization/">performance optimization</a><small>1</small></li>
+  
+    <li><a href="/tags/replication/">replication</a><small>1</small></li>
+  
+    <li><a href="/tags/sharding/">sharding</a><small>1</small></li>
+  
+    <li><a href="/tags/vagrant/">vagrant</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 Tianyu Huang
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'devporo';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"
+  xmlns:atom="http://www.w3.org/2005/Atom"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title><![CDATA[DevPoro]]></title>
+    <link>http://www.devporo.com/</link>
+    <atom:link href="/rss.xml" rel="self" type="application/rss+xml"/>
+    <description><![CDATA[Dev Blog]]></description>
+    <pubDate>Sun, 08 Nov 2015 06:24:53 GMT</pubDate>
+    <generator>http://hexo.io/</generator>
+    
+    <item>
+      <title><![CDATA[Thoughts on performance optimization]]></title>
+      <link>http://www.devporo.com/2015/09/13/Thoughts-on-performance-optimization/</link>
+      <guid>http://www.devporo.com/2015/09/13/Thoughts-on-performance-optimization/</guid>
+      <pubDate>Sun, 13 Sep 2015 20:15:37 GMT</pubDate>
+      <description>
+      <![CDATA[Performance problem can have many factors, application server has its limit on how many requests it can handle simultaneously, database heavily relies on memory and IO, end user may be far away from servers. In this post I will focus on database improvement.]]>
+      
+      </description>
+      <content:encoded><![CDATA[<p>Performance problem can have many factors, application server has its limit on how many requests it can handle simultaneously, database heavily relies on memory and IO, end user may be far away from servers. In this post I will focus on database improvement.</p>
+<img src="/2015/09/13/Thoughts-on-performance-optimization/db-performance.png" alt="[Database Performance]" title="[Database Performance]">
+<a id="more"></a>
+<p>Normally application services should be easy to scale, use load balancer to evenly distribute traffic does not only reduces the workload for each app server, it also provides high availabilty. Static assets can be hosted with AWS cloudfront to achieve fast delivery to end user. S3 can be used to store user uploaded files.</p>
+<p>If end user still experience slowness, the bottleneck is most likely on the database, when a database can not handle very large working set or too many writes. One way is sharding.</p>
+<h2 id="How_sharding_are_commonly_done">How sharding are commonly done</h2><h3 id="1-_Partitioning_by_function">1. Partitioning by function</h3><p>This is usually the best way to fix any of the problems mentioned above. What you do is pick a few very busy tables, and move them onto their own database server. Partition-by-function keeps the architecture still simple, and should work for most cases unless you have a single table which by itself can’t fit into the above constraints.</p>
+<h3 id="2-_Sharding_by_key">2. Sharding by key</h3><p>It works by picking a column of the table and divide up the data to different servers based on it. It is hard to get it working right because in practical some shards may be overloaded while the others are not. In addition to that, developer has to write more code to handle sharding logic and operational issues become more difficult (backing up, adding indexes, changing schema).</p>
+<h2 id="Take_these_steps_before_trying_complicated_solutions">Take these steps before trying complicated solutions</h2><p>Sharding is complex and painful, it should be the last thing to do. Before dive into sharding, consider the following options:</p>
+<h3 id="1-_Index">1. Index</h3><p>This is the easiest solution, if index right, you can see a huge speed boost on queries. But overuse index can result slower writes.</p>
+<h3 id="2-_Caching">2. Caching</h3><p>Retrieve from memory is much faster. Caching frequently accessed data or page can be very helpful to reduce app/db workloads. The downside of this is having additional service(s) to maintain (i.e. Redis) and expiration management.</p>
+<h3 id="3-_Denormalization_(it_violates_laws_of_universe_T_T)">3. Denormalization (it violates laws of universe T_T)</h3><p>For relational db, join large tables can be slow; for NoSQL(i.e. mongodb, couchdb), join doesn’t even exist, so additional query is required. Either way it is hurting the performance. A common solution is to duplicate data on multiple tables. The drawback is it creates more writes, however it may not be a big problem for most websites because reads are generally higher than writes. It also creates more work to maintain data consistency. So use this on data that is less likely to change, such as store aggregated historical reports, store user information for the comments may not be a bad idea.</p>
+<h3 id="4-_Replication">4. Replication</h3><p>Adding slaves can reduce reads on master. But in order to get this right, it is important to understand how replication works, and it varies on databases. For master-slave databases, there are 3 common replication methods:</p>
+<ul>
+<li>Asynchronous: master does not wait for sync completes to return, it is fast but it does not guarantee data integrity and the data may not be available to query on slaves right away depending on network latency (it is usually very fast on local networks, like a few ms)</li>
+<li>Synchronous: master waits for all slaves ACK. In this case, the drawback is very obviously.</li>
+<li><a href="https://dev.mysql.com/doc/refman/5.5/en/replication-semisync.html" target="_blank" rel="external">Semi-Synchronous</a>: master waits after commit only until at least one slave has received and logged the events, it provides improved data integrity while maintaining fast writes, however it still does not guarantee data integrity(master crashes after commit and before receive slave ack) and only works well on close servers over fast network.</li>
+</ul>
+<h3 id="5-_Queue">5. Queue</h3><p>Slow jobs can be queued, on one hand, application server can move on quickly, on the other hand, you can run workers to process the queue and spread jobs evently, in many cases, it is better to spread out database writes over the time than have a lot of operations at one time and have very little operations at another time. Queue is helpful, but it has its drawbacks, it does not guarantee the jobs will be processed right away(FIFO) and it does not guarantee the order (running multiple workers, or retry after failure). Suitable use cases may be queue index requests for elasticsearch/solr, email tasks, batch tasks.</p>
+<h2 id="Conclusion">Conclusion</h2><p>Performance optimization is difficult, it requires investigation and benchmarking to figure out where the bottleneck is, and there is no single best solution to this, it really depends on what your application does, and what trade off has the least impact for your situation.</p>
+<hr>
+
+<p><strong>Author:</strong><br>Tianyu Huang</p>
+<p><strong>References:</strong><br><a href="https://www.percona.com/blog/2009/08/06/why-you-dont-want-to-shard/" target="_blank" rel="external">Why you don’t want to shard</a><br><a href="https://dev.mysql.com/doc/refman/5.5/en/replication-semisync.html" target="_blank" rel="external">Semisynchronous Replication</a><br><a href="http://redis.io/topics/sentinel" target="_blank" rel="external">Redis Sentinel</a></p>
+]]></content:encoded>
+      <comments>http://www.devporo.com/2015/09/13/Thoughts-on-performance-optimization/#disqus_thread</comments>
+    </item>
+    
+    <item>
+      <title><![CDATA[AWS VPC Best Configuration Practices]]></title>
+      <link>http://www.devporo.com/2015/08/16/AWS-VPC-Best-Configuration-Practices/</link>
+      <guid>http://www.devporo.com/2015/08/16/AWS-VPC-Best-Configuration-Practices/</guid>
+      <pubDate>Sun, 16 Aug 2015 11:16:08 GMT</pubDate>
+      <description>
+      <![CDATA[Use AWS VPC to build isolated secure environment for cloud servers.]]>
+      
+      </description>
+      <content:encoded><![CDATA[<p>A VPC is a virtual network dedicated to your Amazon Web Services (AWS) account that’s logically isolated from other virtual networks in the AWS cloud. You can launch your AWS resources, such as Amazon EC2, RDS, ElasticCache and other instances into your VPC.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/vpc-diagram.png" alt="[VPC Diagram]" title="[VPC Diagram]">
+<a id="more"></a>
+<p>For information about the number of VPCs you can create, see <a href="http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Appendix_Limits.html" target="_blank" rel="external">Amazon VPC Limits</a>.</p>
+<h2 id="1-_Create_VPC">1. Create VPC</h2><p>Log in to the AWS console.</p>
+<p>Navigate to Services-&gt;VPC-&gt;Your VPCs.</p>
+<p>Click “<strong>Create VPC</strong>”.</p>
+<p>When you create a VPC, you specify a set of IP addresses in the form of a Classless Inter-Domain Routing (CIDR) block (for example, 10.0.0.0/16). For more information about CIDR notation and what “/16” means, see <a href="http://en.wikipedia.org/wiki/CIDR" target="_blank" rel="external">Classless Inter-Domain Routing</a>.</p>
+<p>You can assign a single CIDR block to a VPC. The allowed block size is between a /28 netmask and /16 netmask. In other words, the VPC can contain from 16 to 65,536 IP addresses.</p>
+<p>You cannot change a VPC’s size after creating it. If your VPC is too small for your needs, you’ll need to terminate all of the instances in the VPC, delete it, and then create a new, larger VPC.</p>
+<p>To create your VPC, go to the Create VPC dialog box, specify the following VPC details and then click “Yes, Create”.</p>
+<p><strong>CIDR Block</strong>: Specify the CIDR block for your VPC. I prefer 10.0.0.0/16.</p>
+<p><strong>Tenancy</strong>: Default tenancy: This is for running instances on shared hardware and is is free of charge.</p>
+<p><strong>Dedicated Tenancy</strong>: This is for running your instances on single-tenant hardware. A $2 fee applies for each hour in which any dedicated instance is running in a region.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/vpc-create.png" alt="[Create VPC]" title="[Create VPC]">
+<h2 id="2-_Create_Subnets">2. Create Subnets</h2><p>In the navigation pane click on “<strong>Subnets</strong>”.</p>
+<p>Click “<strong>Create Subnet</strong>”.</p>
+<p>Before we create a subnet, let’s understand the best practices for creating them.</p>
+<p>You should create subnets across multiple availability zones, with each subnet residing within a single zone. Creating subnets in and launching instances across multiple availability zones will ensure a high-availability environment.</p>
+<p>When creating separate subnets for ELB, EC2 and RDS instances, each tier should have at least 2 subnets across availability zones.</p>
+<p>For this example, we created subnets using zones us-east1b and us-east-1d. These subnets are called “private subnets” because the instances we launch are not accessible from the Internet. In other words, these instances don’t have a public IP unless you assign an EIP.</p>
+<p><strong>App Tier</strong>: 10.0.1.0/24(zone-b), 10.0.2.0/24(zone-d)</p>
+<p><strong>ELB</strong>: 10.0.51.0/24(zone-b), 10.0.52.0/24(zone-d)</p>
+<p><strong>Database (RDS)</strong>: 10.0.11.0/24(zone-b), 10.0.12.0/24(zone-d)</p>
+<p>Always choose the same availability zones for all tiers. For example, if you choose two zones for high availability and use us-east-1a and us-east1b, then maintain those same 1a and 1b zones for all tiers. This will minimize data transfer charges because data transfers between instances within the same availability zone are free.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/subnet-create.png" alt="[Create Subnet]" title="[Create Subnet]">
+<h2 id="3-_Create_Internet_Gateway">3. Create Internet Gateway</h2><p>By default, instances that are launched into a VPC can’t communicate with the Internet. However, you can enable Internet access by attaching an Internet gateway to the VPC.</p>
+<p>Go to Internet Gateways in the navigation pane and click “<strong>Create Internet Gateway</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/gw-create.png" alt="[Create Gateway]" title="[Create Gateway]">
+<p>Now attach the gateway to a VPC by right clicking on “VPC” and selecting “<strong>Attach to VPC</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/attach-vpc.png" alt="[Attach VPC]" title="[Attach VPC]">
+<h2 id="4-_Create_Route_Tables">4. Create Route Tables</h2><p>A route table contains a set of rules, called routes, that determine where network traffic is directed.</p>
+<p>Each subnet in your VPC must be associated with a route table that will control that subnet’s routing. You can associate multiple subnets with a single route table; however, you can only associate a subnet with one route table.</p>
+<p>Creating a VPC automatically creates a main route table which, by default, enables the instances in your VPC to communicate with one other.</p>
+<p>Go to Route Tables in the navigation pane and click on “<strong>Create Route Table</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/route-create.png" alt="[Create Route]" title="[Create Route]">
+<p>As a best practice create separate route tables for each tier. This will provide more control in maintaining the security of each subnet.</p>
+<p>Now associate the subnets to the route tables.</p>
+<p>Click on one route table and go to the Associations tab.</p>
+<p>Select the subnet and click “<strong>Associate</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/route-associate.png" alt="[Associate Route]" title="[Associate Route]">
+<p>Associate each tier’s subnets separately to the dedicated route table.</p>
+<p>Create 3 new route tables:</p>
+<ol>
+<li><p><strong>ELB Route table</strong>—Associate 10.0.51.0/24 and 10.0.52.0/24.</p>
+</li>
+<li><p><strong>APP route table</strong>—Associate 10.0.1.0/24 and 10.0.2.0/24.</p>
+</li>
+<li><p><strong>RDS route table</strong>—Associate 10.0.11.0/24 and 10.0.12.0/24.</p>
+</li>
+</ol>
+<p>Do not associate any subnets with the main route table.</p>
+<p>Now navigate to the main route table to add a route to allow Internet traffic to the VPC.</p>
+<p>Go to Routes and specify the following values:</p>
+<p><strong>Destination</strong>: 0.0.0.0/0</p>
+<p><strong>Target</strong>: Select “Internet Gateway” from the dropdown menu.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/gw-select.png" alt="[Select Gateway]" title="[Select Gateway]">
+<h2 id="5-_Create_Security_Groups">5. Create Security Groups</h2><p>This process is similar to creating an SG (Security Group) in classic EC2.</p>
+<p>Create separate security groups for ELB, APP, DB (RDS) and NAT instances.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/sg-create.png" alt="[Create Security Group]" title="[Create Security Group]">
+<ol>
+<li><p>APP_SG01</p>
+</li>
+<li><p>NAT_SG01</p>
+</li>
+<li><p>ELB_SG01</p>
+</li>
+<li><p>DB_SG01</p>
+</li>
+</ol>
+<p>Allow Inbound rules for ELB, DB and APP to suit your needs. We’ll address NAT security group rules later in this post.</p>
+<h2 id="6-_Create_NAT_instance">6. Create NAT instance</h2><p>Instances launched into a private subnet in a VPC cannot communicate with the Internet unless you assign a public IP or EIP to the instance. However, assigning a public IP to an instance will allow everyone to initiate inbound Internet traffic.</p>
+<p>Using a Network Address Translation (NAT) instance in your VPC enables instances in the private subnet to initiate outbound Internet traffic.</p>
+<p>Create a subnet with netmask 10.0.0.0/24 for NAT instance. [Refer to section #2 of this post]. We call this subnet a “public subnet” and the others “private subnets”. While, technically, there is no difference between public or private subnet, for clarity we call publicly accessible instances public subnets.</p>
+<p>Associate this subnet to the main route table. You can also create separate route tables to associate to the subnet. If you do create a separate route table, don’t forget to add a route that will allow Internet traffic into the subnet. [Refer to section #4 of this post].</p>
+<p>Now navigate to Services-&gt;EC2-&gt;Launch Instance</p>
+<p>In the Launch Wizard select “<strong>Community AMIs</strong>” and search for “<strong>ami-vpc-nat</strong>”. “ Select the first AMI from the results list to launch the instance into the VPC created in section #1. Choose the subnet 10.0.0.0/24 and then check the “Assign public IP” box. You can also assign an EIP, if needed. On the Configure Security Group page, choose “Select an existing security group” and select the NAT_SG security group that you created earlier.</p>
+
+<p>For this example, we created a micro server.</p>
+<p>Choose a NAT instance type based on your intended workload. If your application only occasionally needs to connect to the Internet and doesn’t require high network bandwidth, then a micro instance will suffice. If your application talks to the Internet continuously and requires better bandwidth, then start with m1.medium instances. You may need to upgrade the NAT instance to m1.large because network I/O varies between instance types.</p>
+<p>Now, deselect the “<strong>Source/Destination</strong>” check box, right click on the NAT instance, select “Change Source/Dest. Check”, and click on “Disable”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/sd-check.png" alt="[]" title="[]">
+<p>The NAT instance must be able to send and receive traffic from sources or destinations other than itself, so you’ll need to deselect the “source/destination” check boxes.</p>
+<p>You can find more details here</p>
+<p>Now navigate to Security Groups to add rules for inbound traffic.</p>
+<p>Go to the Inbound tab for NAT_SG01. These rules will allow app servers to talk to the NAT instance on the 80 and 443 ports.</p>
+<p>Select “<strong>HTTP</strong>” from the Create a new rule list. In the Source box, specify the IP address range of your private subnet (App server subnets) and then click “Add Rule”.</p>
+<p>Select “<strong>HTTPS</strong>” from the Create a new rule list. In the Source box, specify the IP address range of your private subnet, and then click “Add Rule”.</p>
+<p>Click “<strong>Apply Rule Changes</strong>”.</p>
+<p>Now navigate to Route Tables and select the private subnets 10.0.1.0/24 and 10.0.2.0/24.</p>
+<p>On the Routes tab, specify 0.0.0.0/0 in the Destination box, specify the instance ID of the NAT instance in the Target box, and then click “<strong>Add</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/route-add.png" alt="[Add Route]" title="[Add Route]">
+<p>If you don’t need an additional instance for NAT, you can minimize cost by assigning a public IP to the instance that needs Internet access. That will allow the instance to access the Internet directly.</p>
+<h2 id="7-_Create_App_Servers">7. Create App Servers</h2><p>Now go to Services-&gt;EC2 -&gt;Launch Instance.</p>
+<p>On the Configure Instance Details page, from the Network list choose the VPC that you created previously and select your app server subnet (10.0.1.0/24, 10.0.2.0/24) from the Subnet list.</p>
+<p><strong>Optional</strong>: Select the “<strong>Public IP</strong>” check box to request that your app instance receive a public IP address. This is required when you don’t have a NAT instance, but your instance requires Internet access.</p>
+<p>On the Configure Security Group page, select the option “Select an existing security group” and then select the APP_SG01 security group that you created previously. Click “Review and Launch”.</p>
+<p>Now log in to the server and check to see whether or not you can access the Internet.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ping google.com</span><br></pre></td></tr></table></figure>
+<p>You now might ask, “How can I access from my desktop an instance that was created in a private subnet and has no assigned public IP?” The answer is that you can’t. To do so, you’ll need a bastion box in the public subnet. You can use a NAT instance as a bastion server (also known as a jump box).</p>
+<p>Log in to the bastion (NAT) server first. You can access any instance from this server that was created in a private subnet.</p>
+<p>For more details, see <a href="http://cloudpages.wordpress.com/2013/08/05/ssh-to-an-instance-in-private-subnet/" target="_blank" rel="external">here</a>.</p>
+<h2 id="8-_Create_RDS">8. Create RDS</h2><p>Navigate to Services-&gt;RDS</p>
+<p>Go to Subnet Groups in the navigation pane and click “<strong>Create DB Subnet Group</strong>”.</p>
+<p>Select the VPC ID from the drop down menu.</p>
+<p>Select “<strong>Availability Zone</strong>” and choose the Subnet IDs of 10.0.11.0/24 and 10.0.12.0/24. Then click “<strong>Add</strong>”</p>
+<p>Click “<strong>Yes, Create</strong>” to create the subnet group.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/subnet-create.png" alt="[Create Subnet]" title="[Create Subnet]">
+<p>Creating an Options Group and a Parameters Group is similar to doing so in classic EC2.</p>
+<p>Launch an RDS instance within the subnet group created above.</p>
+<p>In the Additional Config window, select the VPC and DB Subnet Groups created previously.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/rds-config.png" alt="[RDS Config]" title="[RDS Config]">
+<p>To make sure that your RDS instance is launched in subnets 10.0.11.0/24 and 10.0.12.0/24, select the “mydb-subgroup01” subnet group.</p>
+<p>All other steps for creating an RDS are as usual.</p>
+<h2 id="9-_Create_ELB">9. Create ELB</h2><p>Now it’s time to create the load balancer. The load balancer will be the frontend and will be accessible from the Internet, which means that the ELB will be launched in public subnets 10.0.51.0/24 and 10.0.52.0/24.</p>
+<p>At this point the two subnets can’t access the Internet. To make them public subnets, update the route table that these subnets are associated to.</p>
+<p>Navigate to Services-&gt;VPC-&gt;Route Tables</p>
+<p>Select the ELB route table.</p>
+<p>On the Routes tab, specify 0.0.0.0/0 in the Destination box, select the Internet gateway in the Target box, and then click “Add”.</p>
+<p>Navigate to Services-&gt; EC2-&gt; Load Balancers</p>
+<p>Click “<strong>Create Load Balancer</strong>”.</p>
+<p>In the Launch Wizard, select “Create LB inside” as your VPC ID.</p>
+<p>Do not select “<strong>Create an internal load balancer</strong>”.</p>
+<p>Click “<strong>Continue</strong>”</p>
+<p>In Add EC2 Instances select the subnets where you want the load balanced instances to be. Select 10.0.51.0/24 and 10.0.52.0/24.</p>
+
+<p>In the next window select ”Choose from your existing security group” and then select the ELB_SG01 security group that you created previously. Click “Continue”.</p>
+<p>In the next window select the App servers. Click “<strong>Continue</strong>”.</p>
+<p>Review the details and click “<strong>Create</strong>”.</p>
+<p>Make sure that you’ve enabled the APP_SG01 inbound ports (80/443) to ELB_SG01 so that the ELB can route traffic to backend app servers. Also make sure that ELB_SG01 HTTP and HTTPS ports are publicly accessible (0.0.0.0/0).</p>
+<hr>
+
+<p><strong>About the Author:</strong> <a href="http://blog.flux7.com/blogs/aws/vpc-best-configuration-practices" target="_blank" rel="external">Flux7 - DevOps &amp; Cloud Computing Hub</a>.</p>
+]]></content:encoded>
+      <comments>http://www.devporo.com/2015/08/16/AWS-VPC-Best-Configuration-Practices/#disqus_thread</comments>
+    </item>
+    
+    <item>
+      <title><![CDATA[How to make Vagrant performance not suck]]></title>
+      <link>http://www.devporo.com/2015/05/08/How-to-make-Vagrant-performance-not-suck/</link>
+      <guid>http://www.devporo.com/2015/05/08/How-to-make-Vagrant-performance-not-suck/</guid>
+      <pubDate>Fri, 08 May 2015 05:21:09 GMT</pubDate>
+      <description>
+      <![CDATA[How to make Vagrant performance not suck - File sharing speed it the key]]>
+      
+      </description>
+      <content:encoded><![CDATA[<p><a href="http://www.vagrantup.com/" target="_blank" rel="external">Vagrant</a> is an invaluable tool for creating a standardized virtual environments that make it incredibly easy to bring on new developers. Instead of requiring users to install Postgres, Redis, Elasticsearch, etc to be able to run and develop on your app, you just give them 3 simple steps (hopefully they don’t even need the first two):</p>
+<ol>
+<li>Download &amp; install VirtualBox</li>
+<li>Download &amp; install Vagrant</li>
+<li>run vagrant up &amp;&amp; vagrant ssh from the project’s folder</li>
+</ol>
+<p>The problem I’ve run into over and over again is that about 1 out of every 3 people who go through this process end up complaining to me that running the app inside of their Vagrant box is painfully slow. The following is what I’ve learned from troubleshooting this issue over and over again.</p>
+<h2 id="Use_the_NFS,_Luke">Use the NFS, Luke</h2><p>By default, VirtualBox shares files between the host and guest operating systems using its own built-in sharing mechanism. While this method works across all types of hosts, it’s incredibly slow, at least on Unix hosts. The solution is to use NFS, which is much faster. How much faster, you ask? Simply turning on NFS doubled my Rails app’s performance, based on number of requests it was able to serve over a 2 minute period. You can read more about the benchmark methodology and results at the end of this article.</p>
+<a id="more"></a>
+<p>To enable NFS, add the following to your Vagrantfile:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Required for NFS to work, pick any local IP</span></span><br><span class="line">config.vm.network :private_network, ip: <span class="string">'192.168.50.50'</span></span><br><span class="line"><span class="comment"># Use NFS for shared folders for better performance</span></span><br><span class="line">config.vm.synced_folder <span class="string">'./data'</span>, <span class="string">'/vagrant'</span>, nfs: <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>Important caveat: most of this is not strictly Vagrant’s fault; the blame lies with VirtualBox, if anything. However, I do wish the Vagrant documentation had a section on performance, because, while the information on NFS is in there, it seems fairly inconsequential until you actually benchmark and realize you’re getting half the performance that you could be getting.</p>
+<h2 id="Use_all_CPU_cores_and_1/4_system_memory">Use all CPU cores and 1/4 system memory</h2><p>Most folks just don’t seem to bother with telling Virtualbox to use more than one CPU core or the default amount RAM, which is understandable because it’s hard to come up with something that works regardless of different host systems. It took me a while, but I put together the following, which should set these values based on each individual host system:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">config.vm.provider <span class="string">"virtualbox"</span> <span class="keyword">do</span> |v|</span><br><span class="line">  host = RbConfig::CONFIG[<span class="string">'host_os'</span>]</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Give VM 1/4 system memory &amp; access to all cpu cores on the host</span></span><br><span class="line">  <span class="keyword">if</span> host =~ /darwin/</span><br><span class="line">    cpus = `sysctl -n hw.ncpu`.to_i</span><br><span class="line">    <span class="comment"># sysctl returns Bytes and we need to convert to MB</span></span><br><span class="line">    mem = `sysctl -n hw.memsize`.to_i / <span class="number">1024</span> / <span class="number">1024</span> / <span class="number">4</span></span><br><span class="line">  elsif host =~ /linux/</span><br><span class="line">    cpus = `nproc`.to_i</span><br><span class="line">    <span class="comment"># meminfo shows KB and we need to convert to MB</span></span><br><span class="line">    mem = `grep <span class="string">'MemTotal'</span> /proc/meminfo | sed <span class="operator">-e</span> <span class="string">'s/MemTotal://'</span> <span class="operator">-e</span> <span class="string">'s/ kB//'</span>`.to_i / <span class="number">1024</span> / <span class="number">4</span></span><br><span class="line">  <span class="keyword">else</span> <span class="comment"># sorry Windows folks, I can't help you</span></span><br><span class="line">    cpus = <span class="number">2</span></span><br><span class="line">    mem = <span class="number">1024</span></span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  v.customize [<span class="string">"modifyvm"</span>, :id, <span class="string">"--memory"</span>, mem]</span><br><span class="line">  v.customize [<span class="string">"modifyvm"</span>, :id, <span class="string">"--cpus"</span>, cpus]</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+<h2 id="Use_vagrant_package">Use vagrant package</h2><p>The typical Vagrant box setup process involves downloading a base box (usually lucid64 or precise64) and installing the required packages with a provisioner like Puppet or Chef. I’ve found that there’s little value in dealing with the hassle of writing the necessary provisioning scripts. It’s much easier to fire up a base box, install everything manually, exit out of the ssh session, and then run vagrant package –output NAME. This will give you a NAME.box file that you can upload to your host of choice (I used S3) and add to your Vagrantfile like so:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">config.vm.box = <span class="string">'NAME'</span></span><br><span class="line">config.vm.box_url = <span class="string">'https://s3.amazonaws.com/BUCKET/vagrant/NAME.box'</span></span><br></pre></td></tr></table></figure>
+<p>This way, when vagrant up runs, it will download the pre-provisioned box and fire it up immediately, rather than going through the provisioning process again.</p>
+<h2 id="Extra:_NFS_benchmarks">Extra: NFS benchmarks</h2><p>To benchmark, I used wrk, a great purpose-built HTTP benchmarking tool that I find much more pleasant to use than ab. On a Mac it’s a simple brew install wrk away.</p>
+<p>Vagrant using virtualbox sharing:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">→ wrk -d120s http:<span class="comment">//localhost:3333/</span></span><br><span class="line">Running <span class="number">2</span>m test @ http:<span class="comment">//localhost:3333/</span></span><br><span class="line">  <span class="number">2</span> threads and <span class="number">10</span> connections</span><br><span class="line">  Thread Stats   Avg      Stdev     Max   +/- Stdev</span><br><span class="line">    Latency    <span class="number">49.14</span>s    <span class="number">29.37</span>s    <span class="number">1.17</span>m   <span class="number">100.00</span>%</span><br><span class="line">    Req/Sec     <span class="number">0.00</span>      <span class="number">0.00</span>     <span class="number">0.00</span>    <span class="number">100.00</span>%</span><br><span class="line">  <span class="number">12</span> requests in <span class="number">2.00</span>m, <span class="number">490.39</span>KB read</span><br><span class="line">  Socket errors: connect <span class="number">0</span>, read <span class="number">0</span>, write <span class="number">0</span>, timeout <span class="number">588</span></span><br><span class="line">Requests/sec:      <span class="number">0.10</span></span><br><span class="line">Transfer/sec:      <span class="number">4.09</span>KB</span><br><span class="line">Running the app natively on my Macbook:</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">→ wrk -d120s http:<span class="comment">//localhost:3000/</span></span><br><span class="line">Running <span class="number">2</span>m test @ http:<span class="comment">//localhost:3000/</span></span><br><span class="line">  <span class="number">2</span> threads and <span class="number">10</span> connections</span><br><span class="line">  Thread Stats   Avg      Stdev     Max   +/- Stdev</span><br><span class="line">    Latency    <span class="number">40.04</span>s    <span class="number">10.71</span>s   <span class="number">47.93</span>s    <span class="number">82.35</span>%</span><br><span class="line">    Req/Sec     <span class="number">0.00</span>      <span class="number">0.00</span>     <span class="number">0.00</span>    <span class="number">100.00</span>%</span><br><span class="line">  <span class="number">27</span> requests in <span class="number">2.00</span>m, <span class="number">1.10</span>MB read</span><br><span class="line">  Socket errors: connect <span class="number">0</span>, read <span class="number">0</span>, write <span class="number">0</span>, timeout <span class="number">573</span></span><br><span class="line">Requests/sec:      <span class="number">0.22</span></span><br><span class="line">Transfer/sec:      <span class="number">9.37</span>KB</span><br><span class="line">Vagrant <span class="keyword">using</span> NFS sharing:</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">→ wrk -d120s http:<span class="comment">//localhost:3333/</span></span><br><span class="line">Running <span class="number">2</span>m test @ http:<span class="comment">//localhost:3333/</span></span><br><span class="line">  <span class="number">2</span> threads and <span class="number">10</span> connections</span><br><span class="line">  Thread Stats   Avg      Stdev     Max   +/- Stdev</span><br><span class="line">    Latency    <span class="number">41.46</span>s    <span class="number">12.49</span>s    <span class="number">1.03</span>m    <span class="number">50.00</span>%</span><br><span class="line">    Req/Sec     <span class="number">0.00</span>      <span class="number">0.00</span>     <span class="number">0.00</span>    <span class="number">100.00</span>%</span><br><span class="line">  <span class="number">24</span> requests in <span class="number">2.00</span>m, <span class="number">0.96</span>MB read</span><br><span class="line">  Socket errors: connect <span class="number">0</span>, read <span class="number">0</span>, write <span class="number">0</span>, timeout <span class="number">576</span></span><br><span class="line">Requests/sec:      <span class="number">0.20</span></span><br><span class="line">Transfer/sec:      <span class="number">8.18</span>KB</span><br></pre></td></tr></table></figure>
+<hr>
+
+<p><strong>About the Author:</strong> Stefan Wrobel - Founder. Developer. Surfer. Skier. Libertarian. Atheist.<br><i class="fa fa-link"></i> <a href="https://stefanwrobel.com/how-to-make-vagrant-performance-not-suck" target="_blank" rel="external">Original post link</a></p>
+]]></content:encoded>
+      <comments>http://www.devporo.com/2015/05/08/How-to-make-Vagrant-performance-not-suck/#disqus_thread</comments>
+    </item>
+    
+    <item>
+      <title><![CDATA[How to Get Google to Index Your New Website & Blog Quickly]]></title>
+      <link>http://www.devporo.com/2015/05/06/How-to-Get-Google-to-Index-Your-New-Website-Blog-Quickly/</link>
+      <guid>http://www.devporo.com/2015/05/06/How-to-Get-Google-to-Index-Your-New-Website-Blog-Quickly/</guid>
+      <pubDate>Wed, 06 May 2015 22:19:38 GMT</pubDate>
+      <description>
+      <![CDATA[How to Get Google to Index Your New Website & Blog Quickly - Googlebot is your friend]]>
+      
+      </description>
+      <content:encoded><![CDATA[<p>Whenever you create a new website or blog for your business, the first thing you probably want to happen is have people find it. And, of course, one of the ways you hope they will find it is through search. But typically, you have to wait around for the Googlebot to crawl your website and add it (or your newest content) to the Google index.</p>
+<p>So the question is: how do you ensure this happens as quickly as possible? Here are the basics of how website content is crawled and indexed, plus some great ways to get the Googlebot to your website or blog to index your content sooner rather than later.</p>
+<h2 id="What_is_Googlebot,_Crawling,_and_Indexing?">What is Googlebot, Crawling, and Indexing?</h2><img src="/2015/05/06/How-to-Get-Google-to-Index-Your-New-Website-Blog-Quickly/googlebot.png" alt="[Google Bot]" title="[Google Bot]">
+<a id="more"></a>
+<p>Before we get started on some good tips to attract the Googlebot to your site, let’s start with what the Googlebot is, plus the difference between indexing and crawling.</p>
+<ul>
+<li>The Googlebot is simply the search bot software that Google sends out to collect information about documents on the web to add to Google’s searchable index.<br>Crawling is the process where the Googlebot goes around from website to website, finding new and updated information to report back to Google. The Googlebot finds what to crawl using links.</li>
+<li>Indexing is the processing of the information gathered by the Googlebot from its crawling activities. Once documents are processed, they are added to Google’s searchable index if they are determined to be quality content. During indexing, the Googlebot processes the words on a page and where those words are located. Information such as title tags and ALT attributes are also analyzed during indexing.</li>
+</ul>
+<p>So how does the Googlebot find new content on the web such as new websites, blogs, pages, etc.? It starts with web pages captured during previous crawl processes and adds in sitemap data provided by webmasters. As it browses web pages previously crawled, it will detect links upon those pages to add to the list of pages to be crawled. If you want more details, you can read about them in <a href="http://support.google.com/webmasters/bin/answer.py?hl=en&amp;answer=182072" target="_blank" rel="external">Webmaster Tools Help</a>.</p>
+<p>Hence, new content on the web is discovered through sitemaps and links. Now we’ll take a look at how to get sitemaps on your website and links to it that will help the Googlebot discover new websites, blogs, and content.</p>
+<h2 id="How_to_Get_Your_New_Website_or_Blog_Discovered">How to Get Your New Website or Blog Discovered</h2><p>So how can you get your new website discovered by the Googlebot? Here are some great ways. The best part is that some of the following will help you get referral traffic to your new website too!</p>
+<ul>
+<li><p><strong>Create a Sitemap</strong> – A sitemap is an XML document on your website’s server that basically lists each page on your website. It tells search engines when new pages have been added and how often to check back for changes on specific pages. For example, you might want a search engine to come back and check your homepage daily for new products, news items, and other new content. If your website is built on WordPress, you can install the Google XML Sitemaps plugin and have it automatically create and update your sitemap for you as well as submit it to search engines. You can also use tools such as the XML Sitemaps Generator.</p>
+</li>
+<li><p><strong>Submit Sitemap to Google Webmaster Tools</strong> – The first place you should take your sitemap for a new website is Google Webmaster Tools. If you don’t already have one, simply create a free Google Account, then sign up for Webmaster Tools. Add your new site to Webmaster Tools, then go to Optimization &gt; Sitemaps and add the link to your website’s sitemap to Webmaster Tools to notify Google about it and the pages you have already published. For extra credit, create an account with Bing and submit your sitemap to them via their Webmaster Tools.</p>
+</li>
+<li><p><strong>Install Google Analytics</strong> – You’ll want to do this for tracking purposes regardless, but it certainly might give Google the heads up that a new website is on the horizon.</p>
+</li>
+<li><p><strong>Submit Website URL to Search Engines</strong> – Some people suggest that you don’t do this simply because there are many other ways to get a search engine’s crawler to your website. But it only takes a moment, and it certainly doesn’t hurt things. So submit your website URL to Google by signing into your Google Account and going to the Submit URL option in Webmaster Tools. For extra credit, submit your site to Bing. You can use the anonymous tool to submit URL’s below the Webmaster Tools Sign In – this will also submit it to Yahoo.</p>
+</li>
+<li><p><strong>Create or Update Social Profiles</strong> – As mentioned previously, crawlers get to your site via links. One way to get some quick links is by creating social networking profiles for your new website or adding a link to your new website to pre-existing profiles. This includes Twitter profiles, Facebook pages, Google+ profiles or pages, LinkedIn profiles or company pages, Pinterest profiles, and YouTube channels.</p>
+</li>
+<li><p><strong>Share Your New Website Link</strong> – Once you have added your new website link to a new or pre-existing social profile, share it in a status update on those networks. While these links are nofollow, they will still alert search engines that are tracking social signals. For Pinterest, pin an image from the website and for YouTube, create a video introducing your new website and include a link to it in the video’s description.</p>
+</li>
+<li><p><strong>Bookmark It</strong> – Use quality social bookmarking sites like Delicious and StumbleUpon.</p>
+</li>
+<li><p><strong>Create Offsite Content</strong> – Again, to help in the link building process, get some more links to your new website by creating offsite content such as submitting guest posts to blogs in your niche, articles to quality article directories, and press releases to services that offer SEO optimization and distribution. Please note this is about quality content from quality sites – you don’t want spammy content from spammy sites because that just tells Google that your website is spammy.</p>
+</li>
+</ul>
+<h2 id="How_to_Get_Your_New_Blog_Discovered">How to Get Your New Blog Discovered</h2><p>So what if your new website is a blog? Then in additional to all of the above options, you can also do the following to help get it found by Google.</p>
+<ul>
+<li><p><strong>Setup Your RSS with Feedburner</strong> – Feedburner is Google’s own RSS management tool. Sign up or in to your Google account and submit your feed with Feedburner by copying your blog’s URL or RSS feed URL into the “Burn a feed” field. In addition to your sitemap, this will also notify Google of your new blog and each time that your blog is updated with a new post.</p>
+</li>
+<li><p><strong>Submit to Blog Directories</strong> – TopRank has a huge list of sites you can submit your RSS feed and blog to. This will help you build even more incoming links. If you aren’t ready to do them all, at least start with Technorati as it is one of the top blog directories. Once you have a good amount of content, also try Alltop.</p>
+</li>
+</ul>
+<h2 id="The_Results">The Results</h2><p>Once your website or blog is indexed, you’ll start to see more traffic from Google search. Plus, getting your new content discovered will happen faster if you have set up sitemaps or have a RSS feed. The best way to ensure that your new content is discovered quickly is simply by sharing it on social media networks through status updates, especially on Google+.</p>
+<p>Also remember that blog content is generally crawled and indexed much faster than regular pages on a static website, so consider having a blog that supports your website. For example, if you have a new product page, write a blog post about it and link to the product page in your blog post. This will help the product page get found much faster by the Googlebot!</p>
+<p><em>What other techniques have you used to get a new website or blog indexed quickly? Please share in the comments!</em></p>
+<hr>
+
+<p><strong>About the Author:</strong> Kristi Hines is a <a href="http://kristihines.com/" target="_blank" rel="external">freelance writer</a>, professional blogger, and social media enthusiast. Her blog Kikolani focuses on blog marketing for personal, professional, and business bloggers. You can follow her on <a href="https://plus.google.com/118321989430962111396/" target="_blank" rel="external">Google+</a>, <a href="http://twitter.com/kikolani" target="_blank" rel="external">Twitter</a>, and <a href="http://facebook.com/kristihinespage" target="_blank" rel="external">Facebook</a>.</p>
+]]></content:encoded>
+      <comments>http://www.devporo.com/2015/05/06/How-to-Get-Google-to-Index-Your-New-Website-Blog-Quickly/#disqus_thread</comments>
+    </item>
+    
+    <item>
+      <title><![CDATA[Google Go or Node.js for web development? Which is better?]]></title>
+      <link>http://www.devporo.com/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/</link>
+      <guid>http://www.devporo.com/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/</guid>
+      <pubDate>Sun, 03 May 2015 18:47:05 GMT</pubDate>
+      <description>
+      <![CDATA[Google Go or Node.js for web development? Which is better? - JavaScript is Dead. Long Live JavaScript.]]>
+      
+      </description>
+      <content:encoded><![CDATA[<p>This post has been sloshing around in my brain for a couple of months now and it’s finally time to let it spill out all over the floor. Last July I started digging into Google Go for my Topcoder Cribs with Docker blog post, and found it to be surprising straight forward, powerful and easy to work with. Subsequently, the more Node.js that I wrote, the more I realized how much I liked Go and missed its ease of use. Periodically I’ve asked myself, “is Go better for web development than Node.js and JavaScript”? Unfortunately, I’ve yet to respond to myself.</p>
+<h2 id="JavaScript_is_Dead-_Long_Live_JavaScript-">JavaScript is Dead. Long Live JavaScript.</h2><p>Don’t get me wrong, I love JavaScript and MEAN is my go-to stack. Roughly 75% of my work is done with JavaScript on the server or client somewhere and I’d estimate that 60–70% of my personal repos are in some flavor of JavaScript. But like most full-stack developers, I’m overwhelmed by seemingly daily releases of new frameworks, testing tools, templating libraries and more. I know the goal is to “JavaScript all the things” but I think we need to stop or take a smoke break from the madness. The State of JavaScript in 2015 provides a great example of the chaos:</p>
+<blockquote>
+<p>As little as twelve months ago is seemed a fait accompli that the modern web would be dominated by Backbone.js (maybe using Marionette), with Grunt as a task runner, Require.js and Handlebars-based templating. Yet six months later, these technologies had all apparently been replaced, if the blogosphere was anything to go by – now, it was all about Angular, Gulp and Browserify. And then suddenly this stack seems questionable too.</p>
+</blockquote>
+<a id="more"></a>
+<p>We’re all adults here so let face reality. It’s no secret that JavaScript has tons of problems. People either code around the warts or run away from JavaScript as quickly as possible. Reddit has an awesome thread on using Go versus Node.js for servers. It’s a must read for the comments alone.</p>
+<img src="/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/JavaScriptGoodPartsVsDefinitiveGuide.jpg" alt="[JavaScriptGoodPartsVsDefinitiveGuide]" title="[JavaScriptGoodPartsVsDefinitiveGuide]">
+<p>No one language is perfect or else everyone would be using it and I’d be writing about my favorite cat videos or pudding recipes instead. However, there are things that make Node.js a joy to develop with including modules, npm (a dream compared to Bundler and dependency hell with Ruby), the event loop, a vibrant developer community and the fact that I can bootstrap a new Express app in a matter of minutes if not seconds.</p>
+<p>But in contrast, there are a number of usability issues that make me want to chew glass sometimes instead of use Node.js. I frequently have issues with profiling, debugging, error handling, testing and the general asynchronous nature of Node.js itself. TJ Holowaychuk, arguably the most prolific Node.js developer, said goodbye to Node.js and hello to Go last summer for a number of these same reasons.</p>
+<p>However, these issue aren’t new and some of the core committers of Node.js are dedicated to solving them. Last December a number of the core committers to Node.js finally became fed up with Joyent’s pace of innovation and release schedule and decided to create a fork of Node.js called io.js. Hopefully everyone involved can get together, site around the campfire, resolve differences and hug it out.</p>
+<img src="/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/campfire.jpg" alt="[Campfire]" title="[Campfire]">
+<h2 id="We_❤_Node-js">We ❤ Node.js</h2><p>At Appirio and topcoder we write a lot of JavaScript and Node.js for our clients and I don’t see this trend slowing anytime in the near future. However, we’ve been hearing whispers from large corporate accounts about using Go, especially when it comes to building APIs and other backend service running on distributed, cloud platforms. The times… they may be a changing!</p>
+<h2 id="Why_I_Fancy_Go">Why I Fancy Go</h2><p>Go is no holy grail. However, for our customers that build and run distributed apps in the cloud, it might be a pretty good fit. TJ outlines some compelling points:</p>
+<blockquote>
+<p>I’m not saying Go is the absolute best language out there and that you must use it, but it’s very mature and robust for its age (roughly the same age as Node), refactoring with types is pleasant and simple, the tooling Go provides for profiling and debugging is great, and the community has very strong conventions regarding documentation, formatting, benchmarking, and API design.</p>
+</blockquote>
+<p>Go feels “scripty” and is very easy to grok with roughly 40 pages of docs. Plus, there’s something that gives me a warm, happy feeling inside when I compile my code into a binary. Maybe it harkens back to my days writing Java where everything was statically typed and I could be fairly confident that things would just “work” and not have to worry about runtime typos.</p>
+<p>Apparently we are not the only ones that are interested in Go as the RedMonk Programming Language Rankings for January shows a steady rise in Go’s popularity, moving from #21 to #17 displacing Visual Basic, Clojure and Groovy since the last ranking in June.</p>
+<p>Adrian Cockcroft of Battery Ventures (and Netflix of course) stated at DockerCon last month:</p>
+<blockquote>
+<p>“In the role I have now working in a VC firm… about 3/4 of the new stuff that we see is written in Go. It’s really started to take over as the language that new things are written in. ”</p>
+</blockquote>
+<p>One last thing… Go may be poised for meteoric rise as version 1.4 recently added support for Android development. If Go becomes fully supported, you may see a huge increase in adoption similar to what happened to Swift’s popularity when it was unveiled. I suspect mobile developers would much rather develop Android apps with Go than with Java. But, then again, what do I know.</p>
+<hr>
+
+<p><strong>About the Author:</strong> Jeff Douglas.<br><i class="fa fa-link"></i> <a href="https://www.topcoder.com/blog/google-go-or-node-js-for-web-development-which-is-better/" target="_blank" rel="external">Original post link</a>.</p>
+]]></content:encoded>
+      <comments>http://www.devporo.com/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/#disqus_thread</comments>
+    </item>
+    
+    <item>
+      <title><![CDATA[MEAN is great, but then you grow up]]></title>
+      <link>http://www.devporo.com/2015/05/01/MEAN-is-great-but-then-you-grow-up/</link>
+      <guid>http://www.devporo.com/2015/05/01/MEAN-is-great-but-then-you-grow-up/</guid>
+      <pubDate>Sat, 02 May 2015 03:56:22 GMT</pubDate>
+      <description>
+      <![CDATA[MEAN is great, but then you grow up. - Develop a prototype, then reflect on your choice.]]>
+      
+      </description>
+      <content:encoded><![CDATA[<blockquote>
+<p>The <strong>MEAN</strong> stack (MongoDB, Express.js, Angular.js, Node.js) is now being heralded as the new <strong>LAMP</strong> (Linux, Apache, MySQL, PHP), the preferred technology stack for startups.</p>
+<p>MEAN is certainly a great technology choice for organizations (particularly startups) seeking to rapidly prototype a capability. However, like all technology choices, the MEAN stack comes with a number tradeoffs. Once you’ve hit some level of success or maturity with MEAN, you should re-evaluate the utility of the individual MEAN technologies as they pertain to your product.</p>
+</blockquote>
+<p>This post is a set of revelations you will probably encounter after the first year of using MEAN, particularly when your product has seen some adoption.</p>
+<a id="more"></a>
+<h2 id="MongoDB">MongoDB</h2><p>MongoDB is a great database. I say this upfront because I’m going to criticize the way it is often abused by developers who don’t understand its model and use cases. I don’t want you to interpret this as me advocating you avoiding MongoDB.</p>
+<p>Like all databases, MongoDB has a sweet-spot. Its great for the storage of schema-less documents where access to records is at the “document-level” (e.g. not pieces of documents). MongoDB is very fast, but it achieves its performance by trading off consistency (in clustered setups). Thus, MongoDB is great when you need speed, flexibility in your model and can accept minor and relatively infrequent data loss.</p>
+<p>However, Mongo may not be the optimal choice for your data storage and access needs.</p>
+<p>There are a number of factors you need to consider when selecting a database. One mistake engineers make when they design an application is to prematurely optimize the system for scale and performance before they have any real metrics. While MongoDB is touted as a “web scale” database, it comes at the cost of features provided by more traditional forms of storage like relational databases (MySQL, PostgresSQL, etc).</p>
+<iframe width="100%" height="400" src="https://www.youtube.com/embed/b2F-DItXtZs" frameborder="0" allowfullscreen></iframe>
+
+<p>A satirical comparison of MongoDB and MySQL.</p>
+<h3 id="MongoDB_Consistency">MongoDB Consistency</h3><p>MongoDB claims to be strongly consistent, but a lot of evidence recently has shown this not to be the case in certain scenarios (when network partitioning occurs, which can happen under heavy load) [1] [2]. <strong>This means that you can potentially lose records that MongoDB has acknowledged as “successfully written”.</strong> Kyle Kingsbury writes an excellent article on his well known blog “Aphyr” about this scenario: <a href="http://aphyr.com/posts/284-call-me-maybe-mongodb" target="_blank" rel="external">http://aphyr.com/posts/284-call-me-maybe-mongodb</a>.</p>
+<p>In terms of your application, if you have a need to have transactional guarantees (meaning if you can’t make a durable write, you need the transaction to fail), you should avoid MongoDB. Example scenarios where strong consistency and durability are essential include “making a deposit into a bank account” or “creating a record of birth”. To put it another way, these are scenarios where you would <strong>get punched in the face by your customer</strong> if you indicated an operation succeeded and it didn’t.</p>
+<p><strong>Don’t drop MongoDB just yet.</strong></p>
+<p>The first step to solving a problem is know you have a problem. If your system can’t tolerate data loss, but the domain isn’t necessarily “bank account worthy” of transactional guarantees (e.g. a comment on a post), you can take external steps to guarantee data protection. For instance, you can log records externally (file system, log aggregator, etc.) and have a process that verifies the integrity of those records. This is especially true if your data set is immutable (meaning records do not get updated once they are created).</p>
+<p>MongoDB is always being patched or updated. It’s possible that some of these concerns will get fixed in the next couple of months and this point will be moot.</p>
+<p>Realistically, the first problem you will likely encounter with MongoDB will be model related, not a consistency issue.</p>
+<h3 id="Access_and_Storage_Patterns">Access and Storage Patterns</h3><p>MongoDB is a document database where the document format is JSON (errr…BSON). MongoDB will allow you to flexibly query records using properties on JSON documents, however, it’s not really designed to do things like Joins (where you create a new record from a set of two or more records). The theory behind a document database is that you keep all pertinent pieces of data together in one data structure. This makes retrieval of a record and all other pertinent information really fast (since no joins are involved). The scope of how much data is stored in that data structure is based on how you intend to access it.</p>
+<p>For instance, if I wanted to model a forum, I might consider storing each forum thread as its own JSON document. This means all comments, upvotes, view statistics, etc. would be stored in the same JSON object. Storing all of the information in a JSON object means the schema of the document is going to contain a bunch of nested entities (objects being an indicator), commonly in some form of aggregation (an array or another object). In a normalized database (not Mongo), entities are typically stored in their own containers (table, collection, etc.). This makes working with the individual entities very easy, especially when you want to perform a partial update of a record.</p>
+<p>Denormalized data stores like MongoDB come with tradeoffs:</p>
+<ul>
+<li><strong>More difficult to perform partial updates</strong> on nested or aggregated entities since the models are buried within each document. This does not mean it’s impossible (MongoDB update operators), but certainly more difficult.</li>
+<li><strong>Difficult to compose new entities from existing aggregates.</strong> Meaning, if you want to get all comments for a particular user, but comments are stored in each forum thread, you will have to perform a MapReduce operation over the entire set to retrieve that information.</li>
+<li><strong>Need for record synchronization</strong> if you represent the same piece of data in more than one place. For instance, if you keep a user’s name with their comments on a forum post, and the user updates their name in their profile, you will have to iterate through each comment to make the same update.</li>
+</ul>
+<p>A rather famous, yet controversial, article was written on this topic: Why You Should Never Use MongoDB. While the title infers that MongoDB was the problem, the real issue was denormalization in a document database didn’t fit Diaspora’s highly-relational model.</p>
+<p>So you have to decide what model best fits your dataset. If you don’t need to maintain relationships between records, need partial updates, or need to access/mutate aggregates, I’d say MongoDB is ideal for you.</p>
+<h3 id="Maintenance">Maintenance</h3><p>MongoDB is not particularly difficult to maintain, but it does have its costs. If you want to employ sharding and replication, you will need to stand up the necessary MongoDB daemons to perform these services, and they will need to be split amongst a couple of servers to be correctly configured. Really, the same is true with any distributed database and your operations team needs to be prepared for the responsibility. In addition, maintaining a Mongo cluster takes some skill and effort, more so than a traditional relational database. Michael Schurter details some of the maintenance effort in Failing with MongoDB.</p>
+<p>The key point to take away here is that if your organization is unprepared to operate, monitor, and maintain a MongoDB cluster, you should either find a hosted solution (Mongolab or Compose - formerly MongoHQ) or use another database.</p>
+<h3 id="Go_polyglot">Go polyglot</h3><p>No database will ever perfectly meet all of your use cases. So, instead of limiting yourself to one, why not use a couple?</p>
+<ul>
+<li>Full-text search: while MongoDB has a full-text index, it’s not as powerful as other, dedicated solutions: Lucene/Solr, ElasticSearch, Sphinx.</li>
+<li>Relational databases: still the workhorse for a number of huge applications at companies like Facebook and Google. Granted, it takes more code to be productive, and they can much slower when you need to perform Joins, they still offer better overall functionality than most NoSQL solutions.</li>
+<li>Key-Value stores: provide great performance for simple lookups. Some implementations like Redis offer super fast set and incrementing operations.</li>
+<li>Graph databases: if you have a highly connected model, like a social network, a graph database may be your best choice for maintaining those relationships.</li>
+</ul>
+<p>Going polyglot isn’t problem free. I guarantee you will be introducing more complexity into your code base and architecture following this route. However, you will likely alleviate some of the performance issues encountered using only one data source.</p>
+<p>OK, I’ve hammered on MongoDB long enough. Let’s look at the rest of the MEAN stack.</p>
+<h2 id="Express-js">Express.js</h2><p>Express.js is probably the most popular and mature server-side MVC framework in the Node.js ecosystem. Countless organizations have built significant applications on the framework without much difficulty.</p>
+<p><strong>However, not everyone is content with Express.js.</strong> - You may not be as well.</p>
+<p>Express, like many frameworks, has to live with its own success. As a piece of software, this usually meaning living with decisions made early in the development of the framework. Some of the problems were detailed by Eran Hammer in his post on why he created Hapi.js:</p>
+<ol>
+<li><strong>Limited extensibility</strong>, Eran felt strangled by the middleware (Connect) implementation, particularly when he needed multiple components to coordinate together [3].</li>
+<li><strong>Poor isolation of the server from the business logic</strong> which prevented the reuse of services for purposes like batching operations (you don’t want to have to go through the Express middleware chain for an internal request) [3].</li>
+<li><strong>Code instead of configuration</strong>, Express emphasized using code (imperative programming) instead using a more declarative model when wiring up middleware and defining routes [3].</li>
+</ol>
+<p>In fact, there are now many robust server-side frameworks to choose from in the Node.js ecosystem. To name a few:</p>
+<ul>
+<li>Hapi.js (<a href="http://hapijs.com/" target="_blank" rel="external">http://hapijs.com/</a>)</li>
+<li>Sails.js (<a href="http://sailsjs.org/" target="_blank" rel="external">http://sailsjs.org/</a>)</li>
+<li>RESTify (<a href="http://mcavage.me/node-restify/" target="_blank" rel="external">http://mcavage.me/node-restify/</a>)</li>
+<li>Derby (<a href="http://derbyjs.com/" target="_blank" rel="external">http://derbyjs.com/</a>)</li>
+<li>Tower (<a href="http://towerjs.org/" target="_blank" rel="external">http://towerjs.org/</a>)</li>
+<li>Tako (<a href="https://github.com/mikeal/tako" target="_blank" rel="external">https://github.com/mikeal/tako</a>)</li>
+<li>Flatiron (<a href="http://flatironjs.org/" target="_blank" rel="external">http://flatironjs.org/</a>)</li>
+</ul>
+<p>If you don’t like Express, it doesn’t take much to move away from it. However, moving to another framework means you will not be able to use a lot of the boilerplate the MEAN project provides you (since much of it is simply a bow-tie around Express). Therefore, this choice is going to involve modifying some configuration around Grunt (the build tool used by the MEAN project) among other things*. Once you are comfortable with the Node.js environment, I think you will find much of this functionality a convenience that you can potentially live with out.</p>
+<p>*When I refer to the “MEAN project”, I’m referring to the code written by MEAN.io that provides features like code generation, runtime configuration, and package management. I’m not speaking of the individual technologies in the MEAN stack.</p>
+<h2 id="Angular-js">Angular.js</h2><p>Angular.js is another great framework, one I personally use and advocate for most web projects. However, in certain circumstances, Angular.js may not be the best framework for your needs.</p>
+<h3 id="Your_heart_might_belong_to_another_framework-">Your heart might belong to another framework.</h3><p>Angular’s programming model borrows a lot of idioms from the Java world (dependency injection, namespaces, etc.). Angular also promotes the separation of DOM manipulation code into directives, the use of a scope hierarchy with dirty state checking, and some behavior defined directly in templates. Together, this style of programming is likely to turn some people off.</p>
+<p>But…that’s ok.</p>
+<p>JavaScript has a number of really good Single Page Application frameworks and if Angular doesn’t match your style, I’m sure some other will:</p>
+<ul>
+<li>Ember.js (<a href="http://emberjs.com/" target="_blank" rel="external">http://emberjs.com/</a>)</li>
+<li>Backbone (<a href="http://backbonejs.org/" target="_blank" rel="external">http://backbonejs.org/</a>)</li>
+<li>Marionette (<a href="http://marionettejs.com/" target="_blank" rel="external">http://marionettejs.com/</a>)</li>
+<li>Knockout (<a href="http://knockoutjs.com/" target="_blank" rel="external">http://knockoutjs.com/</a>)</li>
+<li>Batman (<a href="http://batmanjs.org/" target="_blank" rel="external">http://batmanjs.org/</a>)</li>
+<li>React (<a href="http://facebook.github.io/react/" target="_blank" rel="external">http://facebook.github.io/react/</a>)</li>
+</ul>
+<p>And many, many more…</p>
+<h3 id="Angular-js_may_be_too_difficult_for_your_team-">Angular.js may be too difficult for your team.</h3><p>A common complaint about Angular is that it is too hard to learn. I don’t find this to be the case, but I came to the framework with years of JavaScript experience. Needless to say, other disagree with me. Probably the most vocal is George Butiri in his post The Reason Angular.js Will Fail. Personally, I think he’s failed to grasp some of the core concepts of Angular, but I guess this notion may reinforce his case.</p>
+<p>Even if you really like Angular, and think it was easy to pick up, there is validity to the idea that your team may not feel the same way. So, you may find a need to migrate to another framework if you can’t recruit a competent Angular team.</p>
+<img src="/2015/05/01/MEAN-is-great-but-then-you-grow-up/original.jpg" alt="[My feeling about augnlar.js over time]" title="[My feeling about augnlar.js over time]">
+<p>Angular.js learning coaster<br>I think this describes a lot of people’s experiences around learning Angular.</p>
+<h3 id="Angular-js_may_be_inappropriate">Angular.js may be inappropriate</h3><p><strong>Need Search Engine Optimization:</strong> if you need your application to be indexed by search engines, Single Page Application frameworks will make your life difficult. This is because the application is composed in the UI, so there’s not going to be anything to index if the search engine doesn’t execute the in-page JavaScript like a browser would. Google has stated that they will begin to render pages before indexing, solving the SPA problem, but there’s no commitment yet from the other search engines. In the meantime, you are left with two strategies: work around the problem by providing a set of indexable pages in addition to your SPA, or go back to a more traditional server-side MVC [4].</p>
+<p><strong>Need finer-grained control over DOM:</strong> Angular is going to do its best to get in between you and the DOM (that’s its intention). If you need to have more control over DOM, trying to work purely through directives may not be enough (for instance, if you’re writing something as complex as Photoshop with a lot of cross-component interactions). Honestly, I rarely see this being the case.</p>
+<p><strong>Encounter performance issues you can’t work around:</strong> Angular is pretty fast, but there are certain situations where dirty-state checking can be more costly than using an observer model (like Ember’s). This is quickly seen when a page has a large number of active watches on variables (keep in mind every  is a watch!). Angular authors generally recommend staying under 2,000, mostly because experience has shown them that’s the practical limit for slower machines and older browsers. There’s also a number of tricks to optimize performance, like rendering immutable variables only once (and omitting the watch). After some tuning you might find that Angular still doesn’t provide the performance you are looking for; in that case, you may need to research another framework.*</p>
+<p>*The new Object.observe() ECMA standard will solve a large number of these performance issues for newer browsers [5].</p>
+<h2 id="Node-js">Node.js</h2><p>Finally, we come to Node.js. It’s a great platform, but it’s not for everybody and every use case:</p>
+<p><strong>The JavaScript language:</strong> let’s face it, there’s a large community of developers that like statically-type languages with classic Object-Oriented Programming models. These developers tend to be spoiled with a wealth of tools like IDE’s (with syntax highlighting and code completion), debuggers, VM monitoring tools, etc. Node.js does not have this sort of support.</p>
+<p><strong>Concurrency model:</strong> Node.js uses a single-threaded event loop. JavaScript callbacks are essentially functions queued for execution. I don’t mind this style of concurrency, but many developers loathe it. However, there are some use cases where a thread or actor model makes more sense. In those cases, you will need to find another platform.</p>
+<p><strong>Ecosystem:</strong> while Node’s ecosystem is getting better each year, it’s still hard to compare to languages like Java, Python, PHP, or Ruby. There are a number of domains with substantial frameworks that have no equivalent in JavaScript: scientific computing, natural language processing, rules engines, business process management, distributed computing, security, infrastructure, virtualization, etc. Most of the time it makes more sense to write in the framework’s native language, than try to write some wrapper around it to be controlled via Node.js*.</p>
+<p><strong>Packaging and Deployment:</strong> in some cases, Node.js may not be appropriate simply because it’s a scripting language. This is particularly true if you are writing a product that is packaged and distributed to customers (e.g. on a CD or by download). JavaScript has no means other than minification/obfuscation for protecting your software from IP infringement or piracy. In other cases, customers may not allow a scripting language to be hosted on their servers for security reasons (we see this every once in a while with government customers).</p>
+<p><strong>Team considerations:</strong> most likely your team is not equipped to write server-side JavaScript. When you think about it, JavaScript was in the domain of the Web Developer for the longest time. So your experienced JavaScripters tend to be frontend guys, not backend ones. Also, server-side programming is not easy and takes a mindset quite different than frontend work. So don’t expect your Web Developers to start immediately writing quality backend code, or your server-side guys to be writing quality JavaScript.</p>
+<p><strong>Plenty of viable alternatives:</strong> let’s face it, there’s a lot of sexy on the backend nowaday. While Node.js may be the soup du jour of developers today, it’s completely possible that in two years it will be superseded by Golang, Elixir, Scala, Clojure or something else we’ve never even heard of. Let’s also remember that popularity in Ruby, Python, Java, and C# haven’t wained too much either. With all of these alternatives, it’s easy to find examples where applications would have been more appropriately written on another platform*.</p>
+<p>*Keep in mind that if you ditch Node.js, you also ditch Express.js.</p>
+<p>#Conclusion</p>
+<p>MEAN’s great, but then you grow up. My point is that you shouldn’t let the flashy new toy blind you to the fact that you are accepting serious tradeoffs. If the technology stack and programming paradigm fits your use case well, keep using it. However, if you are like the majority of developers I know, you are quickly going to discover some of the pitfalls of the architecture. In that case, I encourage you to think about the problems you are encountering, specifically, what pieces of the MEAN stack aren’t working out for you. Find compelling reasons why those pieces shouldn’t be in your system and don’t be afraid to move away if you feel it necessary.</p>
+<h2 id="References">References</h2><ul>
+<li><a href="http://aphyr.com/posts/284-call-me-maybe-mongodb" target="_blank" rel="external">http://aphyr.com/posts/284-call-me-maybe-mongodb</a></li>
+<li><a href="http://hackingdistributed.com/2013/01/29/mongo-ft/" target="_blank" rel="external">http://hackingdistributed.com/2013/01/29/mongo-ft/</a></li>
+<li><a href="http://hueniverse.com/2012/12/20/hapi-a-prologue/" target="_blank" rel="external">http://hueniverse.com/2012/12/20/hapi-a-prologue/</a></li>
+<li><a href="https://coderwall.com/p/vqpfka" target="_blank" rel="external">https://coderwall.com/p/vqpfka</a></li>
+<li><a href="http://www.html5rocks.com/en/tutorials/es7/observe/" target="_blank" rel="external">http://www.html5rocks.com/en/tutorials/es7/observe/</a></li>
+</ul>
+<hr>
+
+<p><strong>About the Author:</strong> Richard Clayton.<br><i class="fa fa-link"></i><a href="https://rclayton.silvrback.com/means-great-but-then-you-grow-up" target="_blank" rel="external">Original post link</a>.</p>
+]]></content:encoded>
+      <comments>http://www.devporo.com/2015/05/01/MEAN-is-great-but-then-you-grow-up/#disqus_thread</comments>
+    </item>
+    
+  </channel>
+</rss>

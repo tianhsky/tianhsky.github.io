@@ -1,0 +1,264 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Google Go or Node.js for web development? Which is better? | DevPoro</title>
+  <meta name="author" content="Tianyu Huang">
+  
+  <meta name="description" content="Google Go or Node.js for web development? Which is better? - JavaScript is Dead. Long Live JavaScript.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Google Go or Node.js for web development? Which is better?"/>
+  <meta property="og:site_name" content="DevPoro"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="DevPoro" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-62517450-1', 'auto');
+	ga('send', 'pageview');
+
+</script>
+
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">DevPoro</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+      <li><a href="/portfolio">Portfolio</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-05-03T18:47:05.000Z"><a href="/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/">05/03/2015</a></time>
+      
+      
+  
+    <h1 class="title">Google Go or Node.js for web development? Which is better?</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>This post has been sloshing around in my brain for a couple of months now and it’s finally time to let it spill out all over the floor. Last July I started digging into Google Go for my Topcoder Cribs with Docker blog post, and found it to be surprising straight forward, powerful and easy to work with. Subsequently, the more Node.js that I wrote, the more I realized how much I liked Go and missed its ease of use. Periodically I’ve asked myself, “is Go better for web development than Node.js and JavaScript”? Unfortunately, I’ve yet to respond to myself.</p>
+<h2 id="JavaScript_is_Dead-_Long_Live_JavaScript-">JavaScript is Dead. Long Live JavaScript.</h2><p>Don’t get me wrong, I love JavaScript and MEAN is my go-to stack. Roughly 75% of my work is done with JavaScript on the server or client somewhere and I’d estimate that 60–70% of my personal repos are in some flavor of JavaScript. But like most full-stack developers, I’m overwhelmed by seemingly daily releases of new frameworks, testing tools, templating libraries and more. I know the goal is to “JavaScript all the things” but I think we need to stop or take a smoke break from the madness. The State of JavaScript in 2015 provides a great example of the chaos:</p>
+<blockquote>
+<p>As little as twelve months ago is seemed a fait accompli that the modern web would be dominated by Backbone.js (maybe using Marionette), with Grunt as a task runner, Require.js and Handlebars-based templating. Yet six months later, these technologies had all apparently been replaced, if the blogosphere was anything to go by – now, it was all about Angular, Gulp and Browserify. And then suddenly this stack seems questionable too.</p>
+</blockquote>
+<a id="more"></a>
+<p>We’re all adults here so let face reality. It’s no secret that JavaScript has tons of problems. People either code around the warts or run away from JavaScript as quickly as possible. Reddit has an awesome thread on using Go versus Node.js for servers. It’s a must read for the comments alone.</p>
+<img src="/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/JavaScriptGoodPartsVsDefinitiveGuide.jpg" alt="[JavaScriptGoodPartsVsDefinitiveGuide]" title="[JavaScriptGoodPartsVsDefinitiveGuide]">
+<p>No one language is perfect or else everyone would be using it and I’d be writing about my favorite cat videos or pudding recipes instead. However, there are things that make Node.js a joy to develop with including modules, npm (a dream compared to Bundler and dependency hell with Ruby), the event loop, a vibrant developer community and the fact that I can bootstrap a new Express app in a matter of minutes if not seconds.</p>
+<p>But in contrast, there are a number of usability issues that make me want to chew glass sometimes instead of use Node.js. I frequently have issues with profiling, debugging, error handling, testing and the general asynchronous nature of Node.js itself. TJ Holowaychuk, arguably the most prolific Node.js developer, said goodbye to Node.js and hello to Go last summer for a number of these same reasons.</p>
+<p>However, these issue aren’t new and some of the core committers of Node.js are dedicated to solving them. Last December a number of the core committers to Node.js finally became fed up with Joyent’s pace of innovation and release schedule and decided to create a fork of Node.js called io.js. Hopefully everyone involved can get together, site around the campfire, resolve differences and hug it out.</p>
+<img src="/2015/05/03/Google-Go-or-Node-js-for-web-development-Which-is-better/campfire.jpg" alt="[Campfire]" title="[Campfire]">
+<h2 id="We_❤_Node-js">We ❤ Node.js</h2><p>At Appirio and topcoder we write a lot of JavaScript and Node.js for our clients and I don’t see this trend slowing anytime in the near future. However, we’ve been hearing whispers from large corporate accounts about using Go, especially when it comes to building APIs and other backend service running on distributed, cloud platforms. The times… they may be a changing!</p>
+<h2 id="Why_I_Fancy_Go">Why I Fancy Go</h2><p>Go is no holy grail. However, for our customers that build and run distributed apps in the cloud, it might be a pretty good fit. TJ outlines some compelling points:</p>
+<blockquote>
+<p>I’m not saying Go is the absolute best language out there and that you must use it, but it’s very mature and robust for its age (roughly the same age as Node), refactoring with types is pleasant and simple, the tooling Go provides for profiling and debugging is great, and the community has very strong conventions regarding documentation, formatting, benchmarking, and API design.</p>
+</blockquote>
+<p>Go feels “scripty” and is very easy to grok with roughly 40 pages of docs. Plus, there’s something that gives me a warm, happy feeling inside when I compile my code into a binary. Maybe it harkens back to my days writing Java where everything was statically typed and I could be fairly confident that things would just “work” and not have to worry about runtime typos.</p>
+<p>Apparently we are not the only ones that are interested in Go as the RedMonk Programming Language Rankings for January shows a steady rise in Go’s popularity, moving from #21 to #17 displacing Visual Basic, Clojure and Groovy since the last ranking in June.</p>
+<p>Adrian Cockcroft of Battery Ventures (and Netflix of course) stated at DockerCon last month:</p>
+<blockquote>
+<p>“In the role I have now working in a VC firm… about 3/4 of the new stuff that we see is written in Go. It’s really started to take over as the language that new things are written in. ”</p>
+</blockquote>
+<p>One last thing… Go may be poised for meteoric rise as version 1.4 recently added support for Android development. If Go becomes fully supported, you may see a huge increase in adoption similar to what happened to Swift’s popularity when it was unveiled. I suspect mobile developers would much rather develop Android apps with Go than with Java. But, then again, what do I know.</p>
+<hr>
+
+<p><strong>About the Author:</strong> Jeff Douglas.<br><i class="fa fa-link"></i> <a href="https://www.topcoder.com/blog/google-go-or-node-js-for-web-development-which-is-better/" target="_blank" rel="external">Original post link</a>.</p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/language/">language</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/golang/">golang</a>, <a href="/tags/javascript/">javascript</a>, <a href="/tags/node-js/">node.js</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Comments</h1>
+
+  
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:www.devporo.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Categories</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/categories/development/">development</a><small>1</small></li>
+  
+    <li><a href="/categories/devops/">devops</a><small>1</small></li>
+  
+    <li><a href="/categories/framework/">framework</a><small>1</small></li>
+  
+    <li><a href="/categories/language/">language</a><small>1</small></li>
+  
+    <li><a href="/categories/performance/">performance</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/MEAN/">MEAN</a><small>1</small></li>
+  
+    <li><a href="/tags/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/tags/SOA/">SOA</a><small>1</small></li>
+  
+    <li><a href="/tags/angular-js/">angular.js</a><small>1</small></li>
+  
+    <li><a href="/tags/aws/">aws</a><small>1</small></li>
+  
+    <li><a href="/tags/environment/">environment</a><small>1</small></li>
+  
+    <li><a href="/tags/express-js/">express.js</a><small>1</small></li>
+  
+    <li><a href="/tags/golang/">golang</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/load-balancing/">load balancing</a><small>1</small></li>
+  
+    <li><a href="/tags/mongodb/">mongodb</a><small>1</small></li>
+  
+    <li><a href="/tags/node-js/">node.js</a><small>2</small></li>
+  
+    <li><a href="/tags/performance/">performance</a><small>1</small></li>
+  
+    <li><a href="/tags/performance-optimization/">performance optimization</a><small>1</small></li>
+  
+    <li><a href="/tags/replication/">replication</a><small>1</small></li>
+  
+    <li><a href="/tags/sharding/">sharding</a><small>1</small></li>
+  
+    <li><a href="/tags/vagrant/">vagrant</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 Tianyu Huang
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'devporo';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

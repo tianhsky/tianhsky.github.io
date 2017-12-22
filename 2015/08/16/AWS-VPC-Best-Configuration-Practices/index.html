@@ -1,0 +1,370 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>AWS VPC Best Configuration Practices | DevPoro</title>
+  <meta name="author" content="Tianyu Huang">
+  
+  <meta name="description" content="Use AWS VPC to build isolated secure environment for cloud servers.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="AWS VPC Best Configuration Practices"/>
+  <meta property="og:site_name" content="DevPoro"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="DevPoro" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-62517450-1', 'auto');
+	ga('send', 'pageview');
+
+</script>
+
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">DevPoro</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+      <li><a href="/portfolio">Portfolio</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-08-16T11:16:08.000Z"><a href="/2015/08/16/AWS-VPC-Best-Configuration-Practices/">08/16/2015</a></time>
+      
+      
+  
+    <h1 class="title">AWS VPC Best Configuration Practices</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>A VPC is a virtual network dedicated to your Amazon Web Services (AWS) account that’s logically isolated from other virtual networks in the AWS cloud. You can launch your AWS resources, such as Amazon EC2, RDS, ElasticCache and other instances into your VPC.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/vpc-diagram.png" alt="[VPC Diagram]" title="[VPC Diagram]">
+<a id="more"></a>
+<p>For information about the number of VPCs you can create, see <a href="http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Appendix_Limits.html" target="_blank" rel="external">Amazon VPC Limits</a>.</p>
+<h2 id="1-_Create_VPC">1. Create VPC</h2><p>Log in to the AWS console.</p>
+<p>Navigate to Services-&gt;VPC-&gt;Your VPCs.</p>
+<p>Click “<strong>Create VPC</strong>”.</p>
+<p>When you create a VPC, you specify a set of IP addresses in the form of a Classless Inter-Domain Routing (CIDR) block (for example, 10.0.0.0/16). For more information about CIDR notation and what “/16” means, see <a href="http://en.wikipedia.org/wiki/CIDR" target="_blank" rel="external">Classless Inter-Domain Routing</a>.</p>
+<p>You can assign a single CIDR block to a VPC. The allowed block size is between a /28 netmask and /16 netmask. In other words, the VPC can contain from 16 to 65,536 IP addresses.</p>
+<p>You cannot change a VPC’s size after creating it. If your VPC is too small for your needs, you’ll need to terminate all of the instances in the VPC, delete it, and then create a new, larger VPC.</p>
+<p>To create your VPC, go to the Create VPC dialog box, specify the following VPC details and then click “Yes, Create”.</p>
+<p><strong>CIDR Block</strong>: Specify the CIDR block for your VPC. I prefer 10.0.0.0/16.</p>
+<p><strong>Tenancy</strong>: Default tenancy: This is for running instances on shared hardware and is is free of charge.</p>
+<p><strong>Dedicated Tenancy</strong>: This is for running your instances on single-tenant hardware. A $2 fee applies for each hour in which any dedicated instance is running in a region.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/vpc-create.png" alt="[Create VPC]" title="[Create VPC]">
+<h2 id="2-_Create_Subnets">2. Create Subnets</h2><p>In the navigation pane click on “<strong>Subnets</strong>”.</p>
+<p>Click “<strong>Create Subnet</strong>”.</p>
+<p>Before we create a subnet, let’s understand the best practices for creating them.</p>
+<p>You should create subnets across multiple availability zones, with each subnet residing within a single zone. Creating subnets in and launching instances across multiple availability zones will ensure a high-availability environment.</p>
+<p>When creating separate subnets for ELB, EC2 and RDS instances, each tier should have at least 2 subnets across availability zones.</p>
+<p>For this example, we created subnets using zones us-east1b and us-east-1d. These subnets are called “private subnets” because the instances we launch are not accessible from the Internet. In other words, these instances don’t have a public IP unless you assign an EIP.</p>
+<p><strong>App Tier</strong>: 10.0.1.0/24(zone-b), 10.0.2.0/24(zone-d)</p>
+<p><strong>ELB</strong>: 10.0.51.0/24(zone-b), 10.0.52.0/24(zone-d)</p>
+<p><strong>Database (RDS)</strong>: 10.0.11.0/24(zone-b), 10.0.12.0/24(zone-d)</p>
+<p>Always choose the same availability zones for all tiers. For example, if you choose two zones for high availability and use us-east-1a and us-east1b, then maintain those same 1a and 1b zones for all tiers. This will minimize data transfer charges because data transfers between instances within the same availability zone are free.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/subnet-create.png" alt="[Create Subnet]" title="[Create Subnet]">
+<h2 id="3-_Create_Internet_Gateway">3. Create Internet Gateway</h2><p>By default, instances that are launched into a VPC can’t communicate with the Internet. However, you can enable Internet access by attaching an Internet gateway to the VPC.</p>
+<p>Go to Internet Gateways in the navigation pane and click “<strong>Create Internet Gateway</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/gw-create.png" alt="[Create Gateway]" title="[Create Gateway]">
+<p>Now attach the gateway to a VPC by right clicking on “VPC” and selecting “<strong>Attach to VPC</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/attach-vpc.png" alt="[Attach VPC]" title="[Attach VPC]">
+<h2 id="4-_Create_Route_Tables">4. Create Route Tables</h2><p>A route table contains a set of rules, called routes, that determine where network traffic is directed.</p>
+<p>Each subnet in your VPC must be associated with a route table that will control that subnet’s routing. You can associate multiple subnets with a single route table; however, you can only associate a subnet with one route table.</p>
+<p>Creating a VPC automatically creates a main route table which, by default, enables the instances in your VPC to communicate with one other.</p>
+<p>Go to Route Tables in the navigation pane and click on “<strong>Create Route Table</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/route-create.png" alt="[Create Route]" title="[Create Route]">
+<p>As a best practice create separate route tables for each tier. This will provide more control in maintaining the security of each subnet.</p>
+<p>Now associate the subnets to the route tables.</p>
+<p>Click on one route table and go to the Associations tab.</p>
+<p>Select the subnet and click “<strong>Associate</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/route-associate.png" alt="[Associate Route]" title="[Associate Route]">
+<p>Associate each tier’s subnets separately to the dedicated route table.</p>
+<p>Create 3 new route tables:</p>
+<ol>
+<li><p><strong>ELB Route table</strong>—Associate 10.0.51.0/24 and 10.0.52.0/24.</p>
+</li>
+<li><p><strong>APP route table</strong>—Associate 10.0.1.0/24 and 10.0.2.0/24.</p>
+</li>
+<li><p><strong>RDS route table</strong>—Associate 10.0.11.0/24 and 10.0.12.0/24.</p>
+</li>
+</ol>
+<p>Do not associate any subnets with the main route table.</p>
+<p>Now navigate to the main route table to add a route to allow Internet traffic to the VPC.</p>
+<p>Go to Routes and specify the following values:</p>
+<p><strong>Destination</strong>: 0.0.0.0/0</p>
+<p><strong>Target</strong>: Select “Internet Gateway” from the dropdown menu.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/gw-select.png" alt="[Select Gateway]" title="[Select Gateway]">
+<h2 id="5-_Create_Security_Groups">5. Create Security Groups</h2><p>This process is similar to creating an SG (Security Group) in classic EC2.</p>
+<p>Create separate security groups for ELB, APP, DB (RDS) and NAT instances.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/sg-create.png" alt="[Create Security Group]" title="[Create Security Group]">
+<ol>
+<li><p>APP_SG01</p>
+</li>
+<li><p>NAT_SG01</p>
+</li>
+<li><p>ELB_SG01</p>
+</li>
+<li><p>DB_SG01</p>
+</li>
+</ol>
+<p>Allow Inbound rules for ELB, DB and APP to suit your needs. We’ll address NAT security group rules later in this post.</p>
+<h2 id="6-_Create_NAT_instance">6. Create NAT instance</h2><p>Instances launched into a private subnet in a VPC cannot communicate with the Internet unless you assign a public IP or EIP to the instance. However, assigning a public IP to an instance will allow everyone to initiate inbound Internet traffic.</p>
+<p>Using a Network Address Translation (NAT) instance in your VPC enables instances in the private subnet to initiate outbound Internet traffic.</p>
+<p>Create a subnet with netmask 10.0.0.0/24 for NAT instance. [Refer to section #2 of this post]. We call this subnet a “public subnet” and the others “private subnets”. While, technically, there is no difference between public or private subnet, for clarity we call publicly accessible instances public subnets.</p>
+<p>Associate this subnet to the main route table. You can also create separate route tables to associate to the subnet. If you do create a separate route table, don’t forget to add a route that will allow Internet traffic into the subnet. [Refer to section #4 of this post].</p>
+<p>Now navigate to Services-&gt;EC2-&gt;Launch Instance</p>
+<p>In the Launch Wizard select “<strong>Community AMIs</strong>” and search for “<strong>ami-vpc-nat</strong>”. “ Select the first AMI from the results list to launch the instance into the VPC created in section #1. Choose the subnet 10.0.0.0/24 and then check the “Assign public IP” box. You can also assign an EIP, if needed. On the Configure Security Group page, choose “Select an existing security group” and select the NAT_SG security group that you created earlier.</p>
+
+<p>For this example, we created a micro server.</p>
+<p>Choose a NAT instance type based on your intended workload. If your application only occasionally needs to connect to the Internet and doesn’t require high network bandwidth, then a micro instance will suffice. If your application talks to the Internet continuously and requires better bandwidth, then start with m1.medium instances. You may need to upgrade the NAT instance to m1.large because network I/O varies between instance types.</p>
+<p>Now, deselect the “<strong>Source/Destination</strong>” check box, right click on the NAT instance, select “Change Source/Dest. Check”, and click on “Disable”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/sd-check.png" alt="[]" title="[]">
+<p>The NAT instance must be able to send and receive traffic from sources or destinations other than itself, so you’ll need to deselect the “source/destination” check boxes.</p>
+<p>You can find more details here</p>
+<p>Now navigate to Security Groups to add rules for inbound traffic.</p>
+<p>Go to the Inbound tab for NAT_SG01. These rules will allow app servers to talk to the NAT instance on the 80 and 443 ports.</p>
+<p>Select “<strong>HTTP</strong>” from the Create a new rule list. In the Source box, specify the IP address range of your private subnet (App server subnets) and then click “Add Rule”.</p>
+<p>Select “<strong>HTTPS</strong>” from the Create a new rule list. In the Source box, specify the IP address range of your private subnet, and then click “Add Rule”.</p>
+<p>Click “<strong>Apply Rule Changes</strong>”.</p>
+<p>Now navigate to Route Tables and select the private subnets 10.0.1.0/24 and 10.0.2.0/24.</p>
+<p>On the Routes tab, specify 0.0.0.0/0 in the Destination box, specify the instance ID of the NAT instance in the Target box, and then click “<strong>Add</strong>”.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/route-add.png" alt="[Add Route]" title="[Add Route]">
+<p>If you don’t need an additional instance for NAT, you can minimize cost by assigning a public IP to the instance that needs Internet access. That will allow the instance to access the Internet directly.</p>
+<h2 id="7-_Create_App_Servers">7. Create App Servers</h2><p>Now go to Services-&gt;EC2 -&gt;Launch Instance.</p>
+<p>On the Configure Instance Details page, from the Network list choose the VPC that you created previously and select your app server subnet (10.0.1.0/24, 10.0.2.0/24) from the Subnet list.</p>
+<p><strong>Optional</strong>: Select the “<strong>Public IP</strong>” check box to request that your app instance receive a public IP address. This is required when you don’t have a NAT instance, but your instance requires Internet access.</p>
+<p>On the Configure Security Group page, select the option “Select an existing security group” and then select the APP_SG01 security group that you created previously. Click “Review and Launch”.</p>
+<p>Now log in to the server and check to see whether or not you can access the Internet.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ping google.com</span><br></pre></td></tr></table></figure>
+<p>You now might ask, “How can I access from my desktop an instance that was created in a private subnet and has no assigned public IP?” The answer is that you can’t. To do so, you’ll need a bastion box in the public subnet. You can use a NAT instance as a bastion server (also known as a jump box).</p>
+<p>Log in to the bastion (NAT) server first. You can access any instance from this server that was created in a private subnet.</p>
+<p>For more details, see <a href="http://cloudpages.wordpress.com/2013/08/05/ssh-to-an-instance-in-private-subnet/" target="_blank" rel="external">here</a>.</p>
+<h2 id="8-_Create_RDS">8. Create RDS</h2><p>Navigate to Services-&gt;RDS</p>
+<p>Go to Subnet Groups in the navigation pane and click “<strong>Create DB Subnet Group</strong>”.</p>
+<p>Select the VPC ID from the drop down menu.</p>
+<p>Select “<strong>Availability Zone</strong>” and choose the Subnet IDs of 10.0.11.0/24 and 10.0.12.0/24. Then click “<strong>Add</strong>”</p>
+<p>Click “<strong>Yes, Create</strong>” to create the subnet group.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/subnet-create.png" alt="[Create Subnet]" title="[Create Subnet]">
+<p>Creating an Options Group and a Parameters Group is similar to doing so in classic EC2.</p>
+<p>Launch an RDS instance within the subnet group created above.</p>
+<p>In the Additional Config window, select the VPC and DB Subnet Groups created previously.</p>
+<img src="/2015/08/16/AWS-VPC-Best-Configuration-Practices/rds-config.png" alt="[RDS Config]" title="[RDS Config]">
+<p>To make sure that your RDS instance is launched in subnets 10.0.11.0/24 and 10.0.12.0/24, select the “mydb-subgroup01” subnet group.</p>
+<p>All other steps for creating an RDS are as usual.</p>
+<h2 id="9-_Create_ELB">9. Create ELB</h2><p>Now it’s time to create the load balancer. The load balancer will be the frontend and will be accessible from the Internet, which means that the ELB will be launched in public subnets 10.0.51.0/24 and 10.0.52.0/24.</p>
+<p>At this point the two subnets can’t access the Internet. To make them public subnets, update the route table that these subnets are associated to.</p>
+<p>Navigate to Services-&gt;VPC-&gt;Route Tables</p>
+<p>Select the ELB route table.</p>
+<p>On the Routes tab, specify 0.0.0.0/0 in the Destination box, select the Internet gateway in the Target box, and then click “Add”.</p>
+<p>Navigate to Services-&gt; EC2-&gt; Load Balancers</p>
+<p>Click “<strong>Create Load Balancer</strong>”.</p>
+<p>In the Launch Wizard, select “Create LB inside” as your VPC ID.</p>
+<p>Do not select “<strong>Create an internal load balancer</strong>”.</p>
+<p>Click “<strong>Continue</strong>”</p>
+<p>In Add EC2 Instances select the subnets where you want the load balanced instances to be. Select 10.0.51.0/24 and 10.0.52.0/24.</p>
+
+<p>In the next window select ”Choose from your existing security group” and then select the ELB_SG01 security group that you created previously. Click “Continue”.</p>
+<p>In the next window select the App servers. Click “<strong>Continue</strong>”.</p>
+<p>Review the details and click “<strong>Create</strong>”.</p>
+<p>Make sure that you’ve enabled the APP_SG01 inbound ports (80/443) to ELB_SG01 so that the ELB can route traffic to backend app servers. Also make sure that ELB_SG01 HTTP and HTTPS ports are publicly accessible (0.0.0.0/0).</p>
+<hr>
+
+<p><strong>About the Author:</strong> <a href="http://blog.flux7.com/blogs/aws/vpc-best-configuration-practices" target="_blank" rel="external">Flux7 - DevOps &amp; Cloud Computing Hub</a>.</p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/devops/">devops</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/aws/">aws</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Comments</h1>
+
+  
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:www.devporo.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Categories</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/categories/development/">development</a><small>1</small></li>
+  
+    <li><a href="/categories/devops/">devops</a><small>1</small></li>
+  
+    <li><a href="/categories/framework/">framework</a><small>1</small></li>
+  
+    <li><a href="/categories/language/">language</a><small>1</small></li>
+  
+    <li><a href="/categories/performance/">performance</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/MEAN/">MEAN</a><small>1</small></li>
+  
+    <li><a href="/tags/SEO/">SEO</a><small>1</small></li>
+  
+    <li><a href="/tags/SOA/">SOA</a><small>1</small></li>
+  
+    <li><a href="/tags/angular-js/">angular.js</a><small>1</small></li>
+  
+    <li><a href="/tags/aws/">aws</a><small>1</small></li>
+  
+    <li><a href="/tags/environment/">environment</a><small>1</small></li>
+  
+    <li><a href="/tags/express-js/">express.js</a><small>1</small></li>
+  
+    <li><a href="/tags/golang/">golang</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/load-balancing/">load balancing</a><small>1</small></li>
+  
+    <li><a href="/tags/mongodb/">mongodb</a><small>1</small></li>
+  
+    <li><a href="/tags/node-js/">node.js</a><small>2</small></li>
+  
+    <li><a href="/tags/performance/">performance</a><small>1</small></li>
+  
+    <li><a href="/tags/performance-optimization/">performance optimization</a><small>1</small></li>
+  
+    <li><a href="/tags/replication/">replication</a><small>1</small></li>
+  
+    <li><a href="/tags/sharding/">sharding</a><small>1</small></li>
+  
+    <li><a href="/tags/vagrant/">vagrant</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 Tianyu Huang
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'devporo';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
